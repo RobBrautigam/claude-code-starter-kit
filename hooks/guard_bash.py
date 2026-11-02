@@ -18,13 +18,22 @@ What it refuses (each refusal names the check, the reason and the fix):
     data-delete      dropdb, gh repo delete, supabase projects delete, supabase db reset --linked,
                      and DROP TABLE / DATABASE / SCHEMA, TRUNCATE or DELETE FROM without WHERE
                      when an SQL client (psql, mysql, sqlite3, ...) runs them
-    rm-root          rm -rf aimed at /, /*, ~ or $HOME
+    rm-root          rm -rf aimed at /, /*, ~, $HOME or ${HOME}, with or without /*
     heredoc-backslash  a Bash heredoc whose body holds a backslash under an unquoted delimiter,
                      or two backslashes in a row under any delimiter: bash and the tool layer
                      rewrite them, so the program does not get the bytes you wrote
 
 The override, for the one time a human asked for exactly this: start the command with
-    GUARD_OK="<the human's reason>" <command>
+    GUARD_OK="<the human's reason>" <command>            (bash)
+    $env:GUARD_OK="<the human's reason>"; <command>      (PowerShell)
+It covers that one command (or that one pipeline), never the rest of a chain after it.
+
+How it reads a command: it splits the line on ; && || & and newlines, keeps a pipeline
+together, drops redirections (2>&1, > file), skips wrapper flags and their values (sudo -u
+bob, timeout 30), and reads the script inside bash -c / -lc / -ec, sh -c and powershell
+-Command. A line it cannot tokenize is split roughly and still checked, never waved
+through. SQL is read from a client's own arguments, a pipe into it and a heredoc fed to
+it; a file fed with `< wipe.sql` is not opened.
 A refusal is the hook exiting 2 with the reason on stderr, which Claude Code shows to Claude.
 
 This is pattern matching on the command text to stop accidents. It is not a security boundary:
@@ -46,7 +55,20 @@ WRAPPERS = {"sudo", "env", "time", "nice", "nohup", "command", "builtin", "exec"
 SHELLS_WITH_C = {"bash", "sh", "zsh", "dash"}
 POWERSHELLS = {"powershell", "powershell.exe", "pwsh", "pwsh.exe"}
 SEPARATORS = {";", "&&", "||", "|", "&", "(", ")", "\n", ";;", "|&"}
-OVERRIDE_RE = re.compile(r"^\s*GUARD_OK=(\"[^\"]+\"|'[^']+'|[^\s\"']+)\s")
+# The override prefix, in bash form (GUARD_OK="why" cmd) or PowerShell form ($env:GUARD_OK="why"; cmd).
+# It covers the one command (or pipeline) that follows it, never the rest of a chained line.
+OVERRIDE_RE = re.compile(
+    r"^\s*(?:GUARD_OK=(?:\"[^\"]+\"|'[^']+'|[^\s\"';&|]+)\s+"
+    r"|\$env:GUARD_OK\s*=\s*(?:\"[^\"]+\"|'[^']+')\s*;\s*)"
+)
+WRAPPER_VALUE_FLAGS = {
+    "sudo": {"-u", "-g", "-h", "-p", "-C", "-D", "-r", "-t", "-U", "-T", "--user", "--group"},
+    "env": {"-u", "-C", "-S", "--unset", "--chdir", "--split-string"},
+    "nice": {"-n", "--adjustment"},
+    "timeout": {"-s", "-k", "--signal", "--kill-after"},
+    "xargs": {"-I", "-L", "-n", "-P", "-d", "-E", "-s", "-a"},
+    "exec": {"-a"},
+}
 
 Refusal = Tuple[str, str, str]  # (check, why, fix)
 
@@ -110,54 +132,92 @@ def check_heredocs(bodies: Iterable[Tuple[str, bool, str]]) -> Optional[Refusal]
 # --------------------------------------------------------------------------------------------
 
 
-def tokenize(command: str) -> Optional[List[str]]:
+def tokenize(command: str) -> List[str]:
+    """Shell words and operators. A command shlex cannot read (an unbalanced quote, a PowerShell
+    backtick escape) falls back to a rough split, so the checks still run: never fail open."""
+    text = command.replace("\r", "")
     try:
-        lexer = shlex.shlex(command.replace("\r", ""), posix=True, punctuation_chars=True)
+        lexer = shlex.shlex(text, posix=True, punctuation_chars=True)
         lexer.whitespace = " \t"
         lexer.wordchars += "~-./*$:\\=@%+,{}[]"
         return list(lexer)
     except ValueError:
-        return None
+        return [t.strip("\"'`") for t in re.findall(r"[;&|()<>\n]+|[^\s;&|()<>]+", text)]
 
 
-def simple_commands(command: str, depth: int = 0) -> List[List[str]]:
-    tokens = tokenize(command)
-    if tokens is None:
-        return []
-    commands: List[List[str]] = []
-    current: List[str] = []
+def is_redirect(token: str) -> bool:
+    return bool(token) and set(token) <= set("<>&|") and ("<" in token or ">" in token)
+
+
+def drop_redirects(tokens: List[str]) -> List[str]:
+    """Remove redirections (`> log`, `2>&1`, `< in.sql`) so their targets are never read as
+    arguments; a file descriptor number written before the operator goes with it."""
+    kept: List[str] = []
+    skip_next = False
     for token in tokens:
+        if skip_next:
+            skip_next = False
+            if not (token in SEPARATORS or set(token) <= set(";&|()\n")):
+                continue
+        if is_redirect(token):
+            if kept and kept[-1].isdigit():
+                kept.pop()
+            skip_next = True
+            continue
+        kept.append(token)
+    return kept
+
+
+def command_groups(command: str, depth: int = 0) -> List[List[List[str]]]:
+    """Split a command line into groups (split on ; && || & and newlines), each group a list of
+    simple commands (a pipeline stays one group). Scripts inside bash -c and powershell -Command
+    are expanded into the group that runs them."""
+    groups: List[List[List[str]]] = [[]]
+    current: List[str] = []
+    for token in drop_redirects(tokenize(command)):
         if token in SEPARATORS or set(token) <= set(";&|()\n"):
             if current:
-                commands.append(current)
+                groups[-1].append(current)
             current = []
+            if token not in ("|", "|&") and groups[-1]:
+                groups.append([])
         else:
             current.append(token)
     if current:
-        commands.append(current)
-    expanded: List[List[str]] = []
-    for words in commands:
-        words = strip_prefixes(words)
-        if not words:
-            continue
-        expanded.append(words)
-        inner = inner_script(words)
-        if inner is not None and depth < 3:
-            expanded.extend(simple_commands(inner, depth + 1))
-    return expanded
+        groups[-1].append(current)
+    result: List[List[List[str]]] = []
+    for group in groups:
+        expanded: List[List[str]] = []
+        for words in group:
+            words = strip_prefixes(words)
+            if not words:
+                continue
+            expanded.append(words)
+            inner = inner_script(words)
+            if inner is not None and depth < 3:
+                for inner_group in command_groups(inner, depth + 1):
+                    expanded.extend(inner_group)
+        if expanded:
+            result.append(expanded)
+    return result
+
+
+def simple_commands(command: str, depth: int = 0) -> List[List[str]]:
+    return [words for group in command_groups(command, depth) for words in group]
 
 
 def strip_prefixes(words: List[str]) -> List[str]:
-    """Drop NAME=value assignments and wrappers like sudo, env, timeout 30."""
+    """Drop NAME=value assignments and wrappers like sudo -u someone, env, timeout 30."""
     i = 0
     while i < len(words):
         word = words[i]
         if re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", word):
             i += 1
         elif base(word) in WRAPPERS:
+            takes_value = WRAPPER_VALUE_FLAGS.get(base(word), set())
             i += 1
-            while i < len(words) and (words[i].startswith("-") or re.match(r"^\d+[smhd]?$", words[i])):
-                i += 1
+            while i < len(words) and (words[i].startswith("-") or re.match(r"^\d+(\.\d+)?[smhd]?$", words[i])):
+                i += 2 if words[i] in takes_value else 1
         else:
             break
     return words[i:]
@@ -165,9 +225,11 @@ def strip_prefixes(words: List[str]) -> List[str]:
 
 def inner_script(words: List[str]) -> Optional[str]:
     program = base(words[0])
-    if program in SHELLS_WITH_C and "-c" in words[1:]:
-        index = words.index("-c")
-        return words[index + 1] if index + 1 < len(words) else None
+    if program in SHELLS_WITH_C:
+        for index, word in enumerate(words[1:], 1):
+            if re.match(r"^-[A-Za-z]*c[A-Za-z]*$", word):  # -c, and clusters like -lc, -ec, -xc
+                return words[index + 1] if index + 1 < len(words) else None
+        return None
     if program in POWERSHELLS:
         for flag in ("-Command", "-command", "-c", "-C"):
             if flag in words[1:]:
@@ -215,6 +277,28 @@ def current_branch(folder: str) -> Optional[str]:
     return result.stdout.strip() if result.returncode == 0 else None
 
 
+def commit_short_no_verify(rest: List[str]) -> bool:
+    """True when a short-flag cluster of `git commit` holds -n. Flags that take a value end the
+    cluster (-m, -F, -C, -c, -t) and their next word is the value; -u and -S take an attached one."""
+    skip_value = False
+    for word in rest:
+        if skip_value:
+            skip_value = False
+            continue
+        if not word.startswith("-") or word.startswith("--") or word == "-":
+            continue
+        cluster = word[1:]
+        for position, flag in enumerate(cluster):
+            if flag == "n":
+                return True
+            if flag in "mFCct":
+                skip_value = position == len(cluster) - 1
+                break
+            if flag in "uS":
+                break
+    return False
+
+
 def check_git(words: List[str], cwd: str) -> Optional[Refusal]:
     parts = git_parts(words)
     if parts is None:
@@ -222,7 +306,7 @@ def check_git(words: List[str], cwd: str) -> Optional[Refusal]:
     folder, sub, rest = parts
     where = os.path.join(cwd, folder) if folder else cwd
     if sub in ("commit", "push", "merge", "rebase", "cherry-pick", "am", "revert") and (
-        "--no-verify" in rest or (sub == "commit" and any(re.match(r"^-[a-zA-Z]*n", w) and not w.startswith("--") for w in rest))
+        "--no-verify" in rest or (sub == "commit" and commit_short_no_verify(rest))
     ):
         return (
             "no-verify",
@@ -234,6 +318,7 @@ def check_git(words: List[str], cwd: str) -> Optional[Refusal]:
             w in ("-f", "--force", "--force-with-lease", "--force-if-includes")
             or w.startswith("--force-with-lease=")
             or (re.match(r"^-[a-zA-Z]+$", w) is not None and "f" in w)
+            or w == "--mirror"  # a mirror push force-updates every remote ref, main included
             for w in rest
         )
         refspecs = [w for w in rest if not w.startswith("-")][1:]  # first plain word is the remote
@@ -273,6 +358,8 @@ def check_kill(words: List[str]) -> Optional[Refusal]:
         by_name = True
     elif program in ("stop-process", "spps") and any(w in ("-name", "-processname") or w.startswith("-n") and not w.startswith("-no") for w in lowered):
         by_name = True
+    elif program == "kill" and any(w in ("-name", "-processname") for w in lowered):
+        by_name = True  # PowerShell's kill alias for Stop-Process; bash kill takes ids only
     if by_name:
         return (
             "kill-by-name",
@@ -282,15 +369,20 @@ def check_kill(words: List[str]) -> Optional[Refusal]:
     return None
 
 
-def check_kill_pipeline(command: str) -> Optional[Refusal]:
-    if re.search(r"Get-Process\s+(-Name\s+)?[A-Za-z*][^|]*\|\s*Stop-Process", command, re.IGNORECASE) and not re.search(
-        r"Get-Process\s+-Id\b", command, re.IGNORECASE
-    ):
-        return (
-            "kill-by-name",
-            "Get-Process <name> | Stop-Process stops every process with that name",
-            "select by id (Get-Process -Id <pid>) after checking it is the one you started",
-        )
+def check_kill_pipeline(group: List[List[str]]) -> Optional[Refusal]:
+    """In one pipeline: Get-Process selected by name (or not at all) piped into Stop-Process."""
+    selector_by_name = False
+    for words in group:
+        program = base(words[0])
+        lowered = [w.lower() for w in words[1:]]
+        if program in ("get-process", "gps", "ps") and not any(w in ("-id", "-inputobject") for w in lowered):
+            selector_by_name = program != "ps" or any(w in ("-name", "-processname") for w in lowered)
+        elif program in ("stop-process", "spps", "kill") and selector_by_name and not any(w == "-id" for w in lowered):
+            return (
+                "kill-by-name",
+                "Get-Process <name> | Stop-Process stops every process with that name",
+                "select by id (Get-Process -Id <pid>) after checking it is the one you started",
+            )
     return None
 
 
@@ -341,7 +433,7 @@ def check_rm(words: List[str]) -> Optional[Refusal]:
     if not recursive:
         return None
     targets = [w for w in words[1:] if not w.startswith("-")]
-    dangerous = {"/", "/*", "~", "~/", "~/*", "$HOME", "$HOME/", "$HOME/*", "${HOME}", "${HOME}/"}
+    dangerous = {"/", "/*", "~", "~/", "~/*", "$HOME", "$HOME/", "$HOME/*", "${HOME}", "${HOME}/", "${HOME}/*"}
     if any(t.rstrip() in dangerous for t in targets):
         return ("rm-root", "rm -r aimed at the filesystem root or your home folder", "name the exact folder you mean to remove")
     return None
@@ -354,23 +446,34 @@ SQL_CLIENTS = {"psql", "mysql", "mariadb", "sqlite3", "sqlcmd", "duckdb", "supab
 
 
 def evaluate(tool_name: str, command: str, cwd: str) -> Optional[Refusal]:
-    if OVERRIDE_RE.match(command):
-        return None
+    # The override covers the first command (or pipeline) after it, and only that one.
+    override = OVERRIDE_RE.match(command)
+    if override:
+        command = command[override.end():]
     without_bodies, bodies = split_heredocs(command) if tool_name == "Bash" else (command, [])
-    refusal = check_heredocs(bodies) if tool_name == "Bash" else None
-    if refusal:
-        return refusal
+    groups = command_groups(without_bodies)
+    if override:
+        groups = groups[1:]
+    elif tool_name == "Bash":
+        refusal = check_heredocs(bodies)
+        if refusal:
+            return refusal
     sql_client_seen = False
-    for words in simple_commands(without_bodies):
-        for check in (lambda w: check_git(w, cwd), check_kill, lambda w: check_data_delete(w, without_bodies), check_rm):
-            refusal = check(words)
-            if refusal:
-                return refusal
-        # SQL text is read only where an SQL client runs it, so a commit message that says
-        # "drop table support" is never mistaken for a DROP.
-        if base(words[0]).removesuffix(".exe") in SQL_CLIENTS:
+    for group in groups:
+        for words in group:
+            for check in (lambda w: check_git(w, cwd), check_kill, lambda w: check_data_delete(w, without_bodies), check_rm):
+                refusal = check(words)
+                if refusal:
+                    return refusal
+        refusal = check_kill_pipeline(group)
+        if refusal:
+            return refusal
+        # SQL text is read only in a pipeline an SQL client is part of (`psql -c "..."`,
+        # `echo "..." | psql`), so a commit message that says "drop table support" is never
+        # mistaken for a DROP. A file fed with `< wipe.sql` is not opened.
+        if any(base(words[0]).removesuffix(".exe") in SQL_CLIENTS for words in group):
             sql_client_seen = True
-            refusal = check_sql_text(" ".join(words))
+            refusal = check_sql_text(" ".join(" ".join(words) for words in group))
             if refusal:
                 return refusal
     if sql_client_seen:
@@ -378,7 +481,7 @@ def evaluate(tool_name: str, command: str, cwd: str) -> Optional[Refusal]:
             refusal = check_sql_text(body)
             if refusal:
                 return refusal
-    return check_kill_pipeline(without_bodies)
+    return None
 
 
 def main() -> int:
@@ -398,7 +501,8 @@ def main() -> int:
     sys.stderr.write(
         f"BLOCKED by guard_bash ({check}): {why}.\n"
         f"Fix: {fix}.\n"
-        'Override (only when the human asked for this exact action): start the command with GUARD_OK="<their reason>".\n'
+        'Override (only when the human asked for this exact action): start that one command with '
+        'GUARD_OK="<their reason>" (in PowerShell: $env:GUARD_OK="<their reason>"; ).\n'
     )
     return 2
 

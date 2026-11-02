@@ -195,5 +195,56 @@ class HookProtocol(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
 
 
+class ReviewedBypasses(Base):
+    """Shapes a code review found getting past the guard; each must now be refused or allowed as named."""
+
+    def test_redirects_do_not_hide_a_force_push_to_main(self):
+        for command in ("git push --force 2>&1", "git push --force origin 2>&1", "git push -f > push.log"):
+            self.assertEqual(self.check(command, cwd=self.main_repo), "force-push-main", command)
+        self.assertIsNone(self.check("git push --force origin feat-x 2>&1", cwd=self.main_repo))
+
+    def test_mirror_push_is_a_force_push(self):
+        self.assertEqual(self.check("git push --mirror origin"), "force-push-main")
+
+    def test_an_untokenizable_command_is_still_checked(self):
+        self.assertEqual(self.check('Write-Host "a`"b"; git reset --hard', tool="PowerShell"), "reset-hard")
+
+    def test_override_covers_only_its_own_command(self):
+        self.assertIsNone(self.check('GUARD_OK="asked" git reset --hard'))
+        self.assertEqual(self.check("GUARD_OK=x true; git reset --hard"), "reset-hard")
+        self.assertEqual(self.check('GUARD_OK="asked" git status && rm -rf ~'), "rm-root")
+
+    def test_powershell_override_form(self):
+        self.assertIsNone(self.check('$env:GUARD_OK="asked"; git reset --hard', tool="PowerShell"))
+        self.assertEqual(self.check('$env:GUARD_OK="asked"; git status; git reset --hard', tool="PowerShell"),
+                         "reset-hard")
+
+    def test_shell_flag_clusters_are_unwrapped(self):
+        for command in ("bash -lc 'git reset --hard'", "sh -ec 'git reset --hard'", "bash -xc 'git reset --hard'"):
+            self.assertEqual(self.check(command), "reset-hard", command)
+
+    def test_kill_by_name_in_any_pipeline_segment(self):
+        self.assertEqual(self.check("Get-Process -Id 1; Get-Process node | Stop-Process", tool="PowerShell"),
+                         "kill-by-name")
+        self.assertEqual(self.check("kill -Name node", tool="PowerShell"), "kill-by-name")
+        self.assertIsNone(self.check("kill -9 4242"))
+        self.assertIsNone(self.check("Get-Process -Id 4242 | Stop-Process", tool="PowerShell"))
+
+    def test_sql_piped_into_a_client(self):
+        self.assertEqual(self.check("echo 'DROP TABLE users;' | psql mydb"), "data-delete")
+        self.assertEqual(self.check("printf 'TRUNCATE users;' | sqlite3 app.db"), "data-delete")
+        self.assertIsNone(self.check("echo 'SELECT 1;' | psql mydb"))
+
+    def test_wrapper_flag_values_are_skipped(self):
+        self.assertEqual(self.check("sudo -u bob rm -rf /"), "rm-root")
+        self.assertEqual(self.check("rm -rf ${HOME}/*"), "rm-root")
+        self.assertEqual(self.check("timeout 30 git reset --hard"), "reset-hard")
+
+    def test_commit_short_flags_are_parsed(self):
+        self.assertIsNone(self.check("git commit -uno -m wip"))
+        self.assertIsNone(self.check('git commit -m"index fix"'))
+        self.assertEqual(self.check("git commit -an -m wip"), "no-verify")
+
+
 if __name__ == "__main__":
     unittest.main()

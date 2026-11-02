@@ -92,7 +92,10 @@ def install(target: Path, dry_run: bool, force: bool, with_hooks: bool) -> Dict[
 
 
 def hook_settings(target: Path) -> str:
-    command = f'python "{(target / "hooks" / "guard_bash.py").as_posix()}"'
+    # The Python running the installer, by full path: a bare `python` may not be on the PATH the
+    # hook runs under (Windows often has only `py`, macOS often only `python3`).
+    interpreter = Path(sys.executable).as_posix()
+    command = f'"{interpreter}" "{(target / "hooks" / "guard_bash.py").as_posix()}"'
     settings = {"hooks": {"PreToolUse": [{"matcher": "Bash|PowerShell", "hooks": [{"type": "command", "command": command}]}]}}
     return json.dumps(settings, indent=2)
 
@@ -105,7 +108,7 @@ def main(argv: List[str]) -> int:
     parser.add_argument("--with-hooks", action="store_true", help="also copy the guard hook and print its settings")
     args = parser.parse_args(argv)
 
-    target = Path(args.target).expanduser()
+    target = Path(args.target).expanduser().resolve()  # the hook command needs an absolute path
     report = install(target, args.dry_run, args.force, args.with_hooks)
 
     print(f"{'DRY RUN: nothing written. ' if args.dry_run else ''}Target: {target}")

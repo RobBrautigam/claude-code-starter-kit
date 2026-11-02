@@ -85,6 +85,18 @@ class Install(unittest.TestCase):
         command = settings["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
         self.assertIn("guard_bash.py", command)
 
+    def test_printed_hook_command_is_absolute_and_names_this_python(self):
+        # A relative --target and a bare `python` would both break once the hook runs elsewhere.
+        result = subprocess.run([sys.executable, str(INSTALL), "--target", ".claude", "--with-hooks"],
+                                cwd=self.scratch, capture_output=True, text=True, timeout=120)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        printed = result.stdout[result.stdout.index("{"):result.stdout.rindex("}") + 1]
+        command = json.loads(printed)["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
+        self.assertTrue(command.startswith(f'"{Path(sys.executable).as_posix()}" '), command)
+        hook_path = command.rsplit('"', 2)[-2]
+        self.assertTrue(Path(hook_path).is_absolute(), hook_path)
+        self.assertTrue(Path(hook_path).exists(), hook_path)
+
 
 if __name__ == "__main__":
     unittest.main()

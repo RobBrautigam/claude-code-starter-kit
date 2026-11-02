@@ -102,8 +102,26 @@ def pushed_text(remote: str, updates: List[Tuple[str, str, str, str]]) -> str:
         if local_sha == ZERO:
             continue  # a branch delete publishes nothing
         revs = [local_sha, "--not", f"--remotes={remote}"] if remote_sha == ZERO else [f"{remote_sha}..{local_sha}"]
-        chunks.append(git("log", "--no-color", "--no-ext-diff", "-p", "-U0", "--format=%x1eCOMMIT %H%n%B%x1f", *revs))
+        # --no-renames: a rename shows as a new file, so its new path is read; quotepath off: a
+        # non-ASCII path is read as itself, not as octal escapes.
+        chunks.append(git("-c", "core.quotepath=off", "log", "--no-color", "--no-ext-diff", "--no-renames", "-p", "-U0",
+                          "--format=%x1eCOMMIT %H%n%B%x1f", *revs))
     return "".join(chunks)
+
+
+def header_path(line: str) -> str:
+    """The path from a `diff --git a/<path> b/<path>` header. With --no-renames both halves name the
+    same path, so the split is by length, which a space or a "b/" inside the name cannot fool.
+    Git quotes both halves when the path has a quote, a backslash or a control character."""
+    rest = line[len("diff --git "):]
+    quoted = rest.startswith('"')
+    size = (len(rest) - (8 if quoted else 5)) // 2
+    start = 3 if quoted else 2
+    path = rest[start:start + size]
+    if size > 0 and rest == (f'"a/{path}" "b/{path}"' if quoted else f"a/{path} b/{path}"):
+        return path
+    found = re.findall(r'"?b/(.*?)"?$', rest)
+    return found[-1] if found else rest
 
 
 def scan(log_text: str, patterns: List[Tuple[int, re.Pattern]]) -> List[str]:
@@ -116,11 +134,22 @@ def scan(log_text: str, patterns: List[Tuple[int, re.Pattern]]) -> List[str]:
         message, _, patch = rest.partition("\x1f")
         places: List[Tuple[str, str]] = [(f"{sha} message", line) for line in message.splitlines()]
         current_file, line_number = "?", 0
+        header_place: Optional[int] = None
         for line in patch.splitlines():
-            if line.startswith("+++ "):
-                current_file = line[4:].removeprefix("b/")
+            if line.startswith("diff --git "):
+                # Every changed file has this header, an empty new file included (it has no +++ line).
+                current_file = header_path(line)
+                header_place = len(places)
                 places.append((f"{sha} path", current_file))
+            elif line.startswith("deleted file mode") and header_place is not None:
+                places.pop(header_place)  # removing a file publishes nothing new
+                header_place = None
+            elif line.startswith("+++ "):
+                header_place = None
+                if line[4:] != "/dev/null":
+                    current_file = line[4:].strip('"').removeprefix("b/")
             elif line.startswith("@@"):
+                header_place = None
                 hunk = re.search(r"\+(\d+)", line)
                 line_number = int(hunk.group(1)) if hunk else 0
             elif line.startswith("+"):

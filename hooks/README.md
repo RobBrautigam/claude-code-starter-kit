@@ -22,13 +22,16 @@ or obfuscated command can get past them. Their job is the honest mistake at 2 a.
 | `no-verify` | `git commit`, `push`, `merge`, `rebase`, `cherry-pick` or `am` with `--no-verify`, and `git commit -n` | fix what the hook found and run the command again |
 | `force-push-main` | `git push --force`, `-f`, `--force-with-lease`, `--force-if-includes` or a `+refspec` aimed at `main` or `master`: named, implied by the branch you are on, or through `--all`, `--branches` or `--mirror` | pull with rebase and push normally; change history on a branch, through a pull request |
 | `reset-hard` | `git reset --hard` anywhere | commit the work first (a WIP commit is fine), or `git restore` the one file |
-| `kill-by-name` | `taskkill /IM`, `pkill`, `killall`, `Stop-Process -Name`, `Get-Process <name> \| Stop-Process` | find the process id, check it, and stop that id only |
-| `data-delete` | `dropdb`, `gh repo delete`, `supabase projects delete`, `supabase db reset --linked`, and `DROP TABLE`, `DROP DATABASE`, `DROP SCHEMA`, `TRUNCATE` or a `DELETE FROM` with no `WHERE` run through an SQL client | get the human's word for this exact action, then use the override below |
-| `rm-root` | `rm -r` aimed at `/`, `/*`, `~` or `$HOME` | name the exact folder |
+| `kill-by-name` | `taskkill /IM`, `pkill`, `killall`, `Stop-Process -Name`, `kill -Name`, and `Get-Process <name>` piped into `Stop-Process` in any pipeline of the line | find the process id, check it, and stop that id only |
+| `data-delete` | `dropdb`, `gh repo delete`, `supabase projects delete`, `supabase db reset --linked`, and `DROP TABLE`, `DROP DATABASE`, `DROP SCHEMA`, `TRUNCATE` or a `DELETE FROM` with no `WHERE` given to an SQL client (as its argument, piped into it, or in a heredoc fed to it; a file fed with `< file.sql` is not opened) | get the human's word for this exact action, then use the override below |
+| `rm-root` | `rm -r` aimed at `/`, `/*`, `~`, `$HOME` or `${HOME}`, with or without `/*` | name the exact folder |
 | `heredoc-backslash` | a heredoc whose body holds a backslash under an unquoted delimiter, or two backslashes in a row under any delimiter | write the file with the Write tool, then run it (see `rules/no-bash-heredocs.md`) |
 
-It also reads inside `bash -c "..."`, `sh -c`, `powershell -Command "..."` and common wrappers
-(`sudo`, `env`, `time`, `nohup`, `xargs`), so wrapping a command does not hide it.
+It also reads inside `bash -c "..."` (and flag clusters such as `bash -lc`), `sh -c`,
+`powershell -Command "..."` and common wrappers (`sudo -u <user>`, `env`, `time`, `timeout 30`,
+`nohup`, `xargs`), so wrapping a command does not hide it. Redirections such as `2>&1` or
+`> push.log` are dropped before a command is read, and a line it cannot tokenize is still
+split and checked rather than allowed.
 
 ### How a refusal looks
 
@@ -48,9 +51,19 @@ Override (only when the human asked for this exact action): start the command wi
 
 ### The override
 
-For the one time a human asked for exactly this, start the command with
-`GUARD_OK="<the human's reason>"`. The reason is the point: it puts the human's words beside the
-command in the transcript.
+For the one time a human asked for exactly this, start the command with the human's reason:
+
+```bash
+GUARD_OK="the owner asked to drop the scratch database" dropdb scratch
+```
+
+```powershell
+$env:GUARD_OK="the owner asked to stop this one process"; Stop-Process -Name node
+```
+
+The reason is the point: it puts the human's words beside the command in the transcript. The
+override covers the one command (or pipeline) right after it; anything chained after that with
+`;`, `&&` or `||` is still checked.
 
 ### Turn it on
 
@@ -81,7 +94,8 @@ command in the transcript.
 3. Restart Claude Code, then check it: ask Claude to run `git reset --hard` in a scratch repository.
    The call should come back blocked with the message above.
 
-Use `python3` in the command if that is what your system calls Python.
+The printed command names the Python that ran the installer by its full path, and the hook by
+its absolute path, so it works whatever your system calls Python.
 
 ## git/commit-msg: no AI attribution in commit messages
 
@@ -115,8 +129,9 @@ repository; it is safe and only adds missing hooks). A repository that uses husk
 
 You keep a private denylist OUTSIDE every repository: client names, company names, your machine
 name, private paths, internal hostnames. When you push to a repository that is public, the hook
-reads everything the push would publish (each new commit's message, every added line and every
-added file path) and refuses the push when any of it matches.
+reads everything the push would publish (each new commit's message, every added line, and the
+path of every file added, changed or renamed, an empty file included) and refuses the push when
+any of it matches.
 
 1. Write the denylist at `~/.config/public-repo-guard/denylist.txt` (or point
    `PUBLIC_REPO_DENYLIST` at another path). One Python regular expression per line, matched

@@ -57,6 +57,18 @@ class PublicRepoGuard(unittest.TestCase):
         return subprocess.run([sys.executable, str(GUARD), "origin", url or str(self.remote)], input=stdin,
                               cwd=self.repo, env=self.env, capture_output=True, text=True, timeout=60)
 
+    def test_renamed_and_empty_file_paths_are_checked(self):
+        git(self.repo, "config", "guard.visibility", "public")
+        base = self.commit("notes.txt", "plain content\n")
+        git(self.repo, "mv", "notes.txt", "acme widgets plan.txt")
+        git(self.repo, "commit", "-q", "-m", "rename notes")
+        renamed = self.push_check(git(self.repo, "rev-parse", "HEAD"), remote_sha=base)
+        self.assertEqual(renamed.returncode, 1, renamed.stderr)
+        before_empty = git(self.repo, "rev-parse", "HEAD")
+        empty = self.commit("acme widgets empty.txt", "", message="add empty file")
+        result = self.push_check(empty, remote_sha=before_empty)
+        self.assertEqual(result.returncode, 1, result.stderr)
+
     def test_private_name_in_a_line_blocks_a_public_push(self):
         git(self.repo, "config", "guard.visibility", "public")
         sha = self.commit("notes.md", "intro\nBuilt for Acme Widgets last spring\n")

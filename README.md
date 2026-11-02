@@ -30,7 +30,7 @@ Use `python3` if that is what your system calls Python. The installer:
 
 Then restart Claude Code (or start a fresh conversation) so the rules load and the skills register. Open `~/.claude/CLAUDE.md` and fill in the placeholders.
 
-To check the kit itself on your machine: `python -m unittest discover -s tests` (standard library only; one to two minutes, most of it the git hook tests).
+To check the kit itself on your machine: `python -m unittest discover -s tests` (standard library only; under two minutes, most of it the git hook tests).
 
 ### Or let your agent install it
 
@@ -67,7 +67,7 @@ For the deep onboarding doc with more context, see [INSTRUCTIONS.md](./INSTRUCTI
 - **Five new rules:** [verify-before-done](./rules/verify-before-done.md), [research-first](./rules/research-first.md), [process-hygiene](./rules/process-hygiene.md), [public-repos](./rules/public-repos.md) and [agent-fleet-cost](./rules/agent-fleet-cost.md).
 - **Refreshed rules:** communication-style (four laws and an action-first shape), no-bash-heredocs (the backslash hazard), pushback-on-request (push back unprompted; settled decisions are looked up), git-conventions and development-workflow.
 - **The research skill now uses free sources first;** the Perplexity key is optional.
-- **Tests and CI:** `python -m unittest discover -s tests`, run on Linux and Windows by GitHub Actions on every push.
+- **Tests and CI:** `python -m unittest discover -s tests`, run on Linux and Windows by GitHub Actions on every pull request and every push to `main`.
 
 Full list: [CHANGELOG.md](./CHANGELOG.md).
 
@@ -300,7 +300,7 @@ Rules tell Claude what to do; hooks check it at the moment of action. All three 
 
 | Hook | Kind | What it refuses |
 |---|---|---|
-| [`guard_bash.py`](./hooks/guard_bash.py) | Claude Code `PreToolUse` hook (Bash and PowerShell tools) | `--no-verify`; a force push to main or master; `git reset --hard`; killing a process by name; dropping a database, schema or table; `rm -rf` on a root or home folder; heredoc bodies with backslashes. Override for the one time a human asked: `GUARD_OK="<reason>" <command>` |
+| [`guard_bash.py`](./hooks/guard_bash.py) | Claude Code `PreToolUse` hook (Bash and PowerShell tools) | `--no-verify`; a force push to main or master; `git reset --hard`; killing a process by name; dropping a database, schema or table; `rm -rf` on a root or home folder; heredoc bodies with backslashes. Override for the one time a human asked: `GUARD_OK="<reason>" <command>` (PowerShell: `$env:GUARD_OK="<reason>"; <command>`), covering that one command only |
 | [`git/commit-msg`](./hooks/git/commit-msg) | git `commit-msg` hook | a `Co-Authored-By:` trailer and a "Generated with ..." attribution line |
 | [`git/public_repo_guard.py`](./hooks/git/public_repo_guard.py) | git `pre-push` hook | a push to a PUBLIC repository that carries a name from your private denylist (kept outside every repository) |
 
@@ -416,7 +416,7 @@ The fastest way to make these your own:
 
 **"Restarting Claude Code didn't pick up my edit."** Fully quit Claude Code (close its terminal, or the editor window it runs in) and reopen it. If a Claude Code process is still running afterwards, find its process id (Activity Monitor or `ps` on macOS and Linux, Task Manager or `Get-Process` on Windows) and stop that one id. Never stop processes by name: the name also matches your editor, your browser and other sessions (see [process-hygiene](./rules/process-hygiene.md)).
 
-**"The command guard blocked something I meant to do."** Read the message: it names the check, the reason and the fix. If the human really asked for exactly that action, start the command with `GUARD_OK="<their reason>"`. If a check fires on something harmless, open an issue with the command.
+**"The command guard blocked something I meant to do."** Read the message: it names the check, the reason and the fix. If the human really asked for exactly that action, start the command with `GUARD_OK="<their reason>"` (in PowerShell, `$env:GUARD_OK="<their reason>"; ` first). If a check fires on something harmless, open an issue with the command.
 
 **"The installer said `kept yours`."** You already had that file and it differs from the kit's copy. Compare them, or run with `--force` to replace it (your copy is saved beside it as `<file>.bak-<timestamp>`).
 
