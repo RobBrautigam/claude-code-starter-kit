@@ -7,7 +7,7 @@ description: Interactive weekly review and planning session. Curates the todo qu
 
 Interactive session to organize the project pipeline for the coming week. Curate the queue, assign target dates, audit anything stuck in-progress, promote backlog items.
 
-Task-tracker-agnostic. Substitute the "load pipeline" step with whatever you actually use (filesystem scan, ClickUp, Linear, GitHub issues, a SQL query — same flow shape).
+Task-tracker-agnostic. Substitute the "load pipeline" step with whatever you actually use (filesystem scan, ClickUp, Linear, GitHub issues, a SQL query - same flow shape).
 
 ---
 
@@ -15,10 +15,10 @@ Task-tracker-agnostic. Substitute the "load pipeline" step with whatever you act
 
 Load four datasets:
 
-1. **Todo queue** — projects currently in todo, ordered by queue position.
-2. **In-progress** — projects currently in_progress, ordered by `updated_at` ascending (oldest = most stale).
-3. **Backlog pool** — backlog projects, most recent first, capped at ~50.
-4. **Active initiatives / strategic threads** — whatever long-running goals you organize work around.
+1. **Todo queue** - projects currently in todo, ordered by queue position.
+2. **In-progress** - projects currently in_progress, ordered by `updated_at` ascending (oldest = most stale).
+3. **Backlog pool** - backlog projects, most recent first, capped at ~50.
+4. **Active initiatives / strategic threads** - whatever long-running goals you organize work around.
 
 Filter by repo scope when applicable.
 
@@ -36,7 +36,7 @@ For each in-progress item, ask:
 - Should it move to backlog (deprioritized)?
 - Should it move to done (it's actually finished but never closed out)?
 
-Anything in_progress >14 days without recent activity is almost certainly stale — flag it.
+Anything in_progress >14 days without recent activity is almost certainly stale - flag it.
 
 ---
 
@@ -60,13 +60,13 @@ Now the todo list is the actual queue for the week. Order it:
 
 - Highest-impact / highest-leverage first.
 - Cluster related items so context-switching is minimized.
-- Account for initiative phase ordering — don't start phase 3 work while phase 1 is incomplete *within the same initiative*. Different initiatives are independent.
+- Account for initiative phase ordering - don't start phase 3 work while phase 1 is incomplete *within the same initiative*. Different initiatives are independent.
 
 ---
 
 ## Step 5: Assign target dates
 
-Walk down the curated queue and assign a target date to each item. Spread items across the week to match capacity. Don't over-commit — empty days are fine; missed targets erode trust in the system.
+Walk down the curated queue and assign a target date to each item. Spread items across the week to match capacity. Don't over-commit - empty days are fine; missed targets erode trust in the system.
 
 ---
 
@@ -100,12 +100,12 @@ Week of <date>:
 
 ## Tone
 
-Calmer than daily-review. This is the planning session — deliberate, thorough, but not bureaucratic. Aim for 15-25 minutes total.
+Calmer than daily-review. This is the planning session - deliberate, thorough, but not bureaucratic. Aim for 15-25 minutes total.
 
 ## Rules
 
 - Don't auto-start any project sessions.
 - Don't reorder items the user hasn't asked you to reorder.
-- Be honest about staleness — call out anything that's been in_progress for weeks.
+- Be honest about staleness - call out anything that's been in_progress for weeks.
 - Empty days in the week are acceptable; over-scheduling is a planning anti-pattern.
 - One project per day per slot is plenty if the projects are non-trivial.

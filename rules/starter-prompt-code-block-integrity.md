@@ -1,6 +1,6 @@
 # Starter Prompt Code-Block Integrity
 
-Every copy-paste artifact delivered to the user — starter prompts, multi-line scripts, copy-paste templates — MUST render as ONE intact fenced code block in the conversation. Never two. Never three. Never with mid-prompt seams where the outer fence broke.
+Every copy-paste artifact delivered to the user - starter prompts, multi-line scripts, copy-paste templates - MUST render as ONE intact fenced code block in the conversation. Never two. Never three. Never with mid-prompt seams where the outer fence broke.
 
 This is a non-negotiable rendering rule.
 

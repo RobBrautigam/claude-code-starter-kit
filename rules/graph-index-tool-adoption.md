@@ -1,7 +1,7 @@
 # Graph / Index Tool Adoption by Evidence
 
-Before adopting ANY structural or semantic indexing tool as standing infrastructure — a code
-graph, a knowledge/file graph, a vector index, a RAG layer — **measure its token delta vs plain
+Before adopting ANY structural or semantic indexing tool as standing infrastructure - a code
+graph, a knowledge/file graph, a vector index, a RAG layer - **measure its token delta vs plain
 grep+Read on the actual target corpus, and adopt only on evidence.** Never adopt on a vendor's
 headline number ("71.5× token reduction") or on faith.
 
@@ -16,7 +16,7 @@ Standing adoption has TWO costs:
 - **(A) Build + refresh.** What does it cost to build the index, and to keep it fresh as the
   corpus changes? If the tool routes content through an LLM to ingest (most knowledge/doc graphs
   do for prose/markdown/PDF), that's a **recurring paid-API cost** on every refresh of a changing
-  corpus — a standing liability.
+  corpus - a standing liability.
 - **(B) Per-query token win.** Does a query through the tool actually beat grep+Read?
 
 Adopt only if **(B) clearly outweighs (A)**. A tool that wins per-query but needs a recurring
@@ -26,7 +26,7 @@ paid build over a corpus grep searches for free is usually a net loss.
 
 - **Small corpora** (< ~100 files): plain search is faster; structural navigation adds nothing.
 - **Prose / markdown corpora**: grep + Read pinpoints the 1-2 relevant files cheaply, and you
-  must read the file to answer anyway — a structural subgraph doesn't save that. The headline
+  must read the file to answer anyway - a structural subgraph doesn't save that. The headline
   graph numbers come from large **code** repos where caller/callee/impact navigation matters.
 - **Frequently-changing corpora**: refresh cost dominates; a graph stale within days is a paid
   rebuild treadmill.
@@ -53,8 +53,8 @@ earn it on small, well-named, fast-changing prose.
 ## Why this rule exists
 
 A real pilot is cheaper than a standing mistake. Adopting an index tool that doesn't pay back
-means a recurring build cost, a stale-answer hazard, and config sprawl — for a problem grep
+means a recurring build cost, a stale-answer hazard, and config sprawl - for a problem grep
 already solved. Measure first; the measurement itself is usually a 15-minute, zero-cost grep pass.
 
-Related: `code-review-graph-usage.md` (the code-graph instance — when the code graph earns its
+Related: `code-review-graph-usage.md` (the code-graph instance - when the code graph earns its
 cost).

@@ -11,7 +11,7 @@
 - Frontend-only dev servers (`npm run dev` for Next.js, Vite, etc.) are safe to auto-start. They serve static files locally and don't touch production databases.
 - Python backend (uvicorn / FastAPI) may be auto-started when a session needs live data to verify UI or run integration tests. Prefer `python -m uvicorn src.api.main:app --reload --port 8000` since this boots FastAPI + routes only, not the scheduler / bot.
 - **Do NOT auto-start aggressive pollers** (e.g., Telegram bot pollers, scheduled jobs). They can spike production database load. Start them only when the user explicitly asks.
-- Orphaned processes survive VS Code restarts and run indefinitely at the OS level. Verify cleanup at session end (`tasklist | findstr python` on Windows, `ps aux | grep python` on macOS/Linux) and stop any processes you started. Background `run_in_background: true` tasks must be killed before session close.
+- Orphaned processes survive VS Code restarts and run indefinitely at the OS level. Verify cleanup at session end (`tasklist | findstr python` on Windows, `ps aux | grep python` on macOS/Linux) and stop any processes you started, by process id only. Background `run_in_background: true` tasks must be stopped before session close, and a stopped task is checked in the process table afterwards. The full discipline lives in `process-hygiene.md`.
 - When in doubt about whether a process touches production, ask before starting it.
 
 ## Component library standard

@@ -25,28 +25,28 @@ Local runs that peg the CPU for minutes at a time are an anti-pattern when CI do
 - `node --check path/to/file.js` (syntax check on one file)
 - VS Code TS language service (passive, on-save type check of the open file)
 - `eslint path/to/file.tsx` (lint one file)
-- The dev server (`npm run dev` / `next dev`) — only when actually exercising a feature in the browser, NOT as a verification step before commit
+- The dev server (`npm run dev` / `next dev`) - only when actually exercising a feature in the browser, NOT as a verification step before commit
 
 ## Verification flow when CI exists
 
 1. Make changes locally.
 2. Commit to the feature branch.
 3. Push.
-4. `gh pr checks <PR>` — get current CI status (lightweight remote call).
+4. `gh pr checks <PR>` - get current CI status (lightweight remote call).
 5. If pending: set up a `Monitor` (Claude Code's Monitor tool with a `gh pr checks` poll loop) so you're notified on completion without polling locally. Continue with other work in the meantime.
-6. If failed: `gh run view <run-id> --log-failed` to see the failure log (remote — no local CPU).
+6. If failed: `gh run view <run-id> --log-failed` to see the failure log (remote - no local CPU).
 7. Fix the specific issue. Push. Repeat from step 4.
 
 This is **identical or faster** than running the full suite locally (CI runs jobs in parallel), without the CPU cost.
 
 ## When this rule does NOT apply
 
-- **No CI configured** — local is the only option. Tell the user if a frequently-shipped repo lacks CI so they can decide whether to wire one.
-- **CI is unavailable** — outage, billing-blocked, infrastructure issue.
-- **Single-file iteration** — fast, scoped, no CPU peg. Use freely.
-- **TDD on a single component** — write test, run THAT test only, implement, run THAT test only.
-- **Live debugging** — running the actual production-bug scenario via `npm run dev` to step through it.
-- **User explicitly says "run it locally"** — explicit instruction overrides the rule.
+- **No CI configured** - local is the only option. Tell the user if a frequently-shipped repo lacks CI so they can decide whether to wire one.
+- **CI is unavailable** - outage, billing-blocked, infrastructure issue.
+- **Single-file iteration** - fast, scoped, no CPU peg. Use freely.
+- **TDD on a single component** - write test, run THAT test only, implement, run THAT test only.
+- **Live debugging** - running the actual production-bug scenario via `npm run dev` to step through it.
+- **User explicitly says "run it locally"** - explicit instruction overrides the rule.
 
 ## Subagent discipline (especially important)
 

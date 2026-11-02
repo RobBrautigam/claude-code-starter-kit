@@ -1,0 +1,7 @@
+# Every text file is stored and checked out with LF line endings, on every platform.
+# The git hooks in hooks/git/ are shell and Python scripts: a CRLF shebang line breaks them.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.gif binary

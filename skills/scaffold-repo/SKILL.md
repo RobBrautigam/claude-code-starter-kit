@@ -44,9 +44,9 @@ npx shadcn@latest init
 ```
 
 **Tailwind v4 is CSS-first. Common gotchas:**
-- Do NOT create a `tailwind.config.js` — configuration lives in a `@theme` block in `src/index.css` (or `app/globals.css` for Next.js)
-- Do NOT create a `postcss.config.js` for Vite projects — `@tailwindcss/vite` handles it
-- Do NOT install `autoprefixer` — v4 ships Lightning CSS with vendor prefixing built in
+- Do NOT create a `tailwind.config.js` - configuration lives in a `@theme` block in `src/index.css` (or `app/globals.css` for Next.js)
+- Do NOT create a `postcss.config.js` for Vite projects - `@tailwindcss/vite` handles it
+- Do NOT install `autoprefixer` - v4 ships Lightning CSS with vendor prefixing built in
 - Plugins load via `@plugin '<name>';` directive in CSS, not a `plugins: []` array
 - Dark mode variant: `@custom-variant dark (&:is(.dark *));` in CSS
 - Vite config must import and call the plugin: `import tailwindcss from "@tailwindcss/vite"` and add `tailwindcss()` to `plugins: []`
@@ -91,9 +91,9 @@ git add -A
 git commit -m "initial scaffold"
 ```
 
-**Install the pre-commit hook — placement depends on the repo's language** (per `rules/git-conventions.md`):
+**Install the pre-commit hook - placement depends on the repo's language** (per `rules/git-conventions.md`):
 
-- **TypeScript / Node repos (has a root `package.json`):** use **husky + lint-staged** so the guard checks AND auto-lint/format run on every commit, committed to the repo (survives clones — no per-clone reinstall). Steps:
+- **TypeScript / Node repos (has a root `package.json`):** use **husky + lint-staged** so the guard checks AND auto-lint/format run on every commit, committed to the repo (survives clones - no per-clone reinstall). Steps:
   ```bash
   npm i -D husky lint-staged prettier            # + prettier-plugin-tailwindcss if Tailwind
   npm pkg set scripts.prepare="husky"
@@ -106,18 +106,18 @@ git commit -m "initial scaffold"
     "*.{json,md,css}": ["prettier --write"]
   }
   ```
-  Write `.husky/pre-commit` as a **composite hook** — your guard checks first, then `npx lint-staged` (or `pnpm exec lint-staged`). Because husky sets `core.hooksPath=.husky`, any guard you rely on MUST live inside `.husky/pre-commit` — a `.git/hooks/pre-commit` would be silently bypassed.
+  Write `.husky/pre-commit` as a **composite hook** - your guard checks first, then `npx lint-staged` (or `pnpm exec lint-staged`). Because husky sets `core.hooksPath=.husky`, any guard you rely on MUST live inside `.husky/pre-commit` - a `.git/hooks/pre-commit` would be silently bypassed.
 
-- **Python-only repos (no root `package.json`):** install the composite hook at `.git/hooks/pre-commit`, then `chmod +x .git/hooks/pre-commit`. Not versioned — reinstall on every fresh clone.
+- **Python-only repos (no root `package.json`):** install the composite hook at `.git/hooks/pre-commit`, then `chmod +x .git/hooks/pre-commit`. Not versioned - reinstall on every fresh clone.
 
-A common guard check is an **identity guard** — block a commit if `git config user.email` is an address you never want authoring commits in this repo (e.g. a work email in a personal repo, or vice versa). Example check:
+A common guard check is an **identity guard** - block a commit if `git config user.email` is an address you never want authoring commits in this repo (e.g. a work email in a personal repo, or vice versa). Example check:
 
 ```sh
 #!/bin/sh
 email=$(git config user.email)
 case "$email" in
   *@wrong-domain.example*)
-    echo "ERROR: commit blocked — user.email is '$email' (wrong identity for this repo)."
+    echo "ERROR: commit blocked - user.email is '$email' (wrong identity for this repo)."
     echo "Fix: git config --local user.email <the-correct-address>"
     exit 1
     ;;

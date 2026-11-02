@@ -34,5 +34,5 @@ PHASE 5 - VERIFY + REPORT. One final table: every repo, new path, clean/pushed, 
 ## After the cleanup
 
 1. **Install this kit** so the discipline layer (skills + rules + the global CLAUDE.md template) applies everywhere - see the [README](README.md) install prompt.
-2. **Go multi-window.** With a flat dev root, parallel Claude Code sessions via git worktrees + an orchestrator conversation become natural: https://github.com/RobBrautigam/claude-code-orchestrator
+2. **Go multi-window.** With a flat dev root, parallel Claude Code sessions via git worktrees + an orchestrator conversation become natural: https://github.com/RobBrautigam/ai-orchestrator
 3. **Keep it clean:** every new repo gets cloned straight into the dev root, gets its `CLAUDE.md` on day one, and never touches Desktop again.

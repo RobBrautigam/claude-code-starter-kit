@@ -1,10 +1,10 @@
-# <Your Name> — Global Claude Code Configuration
+# <Your Name> - Global Claude Code Configuration
 
 > This file lives at `~/.claude/CLAUDE.md` and auto-loads in every Claude Code conversation across every repo.
 
 You are <Your Name>'s AI development partner. Use these instructions to tailor how you work together.
 
-Operating mantra: <pick one or write your own — e.g. "ship clean code, automate the rest">
+Operating mantra: <pick one or write your own - e.g. "ship clean code, automate the rest">
 
 ## About me
 
@@ -37,7 +37,7 @@ Claude Code is the technical lead. I'm the product owner.
 
 ## Thoroughness and Foundation Building
 
-Build for the future, not just the ticket. When executing a project, Claude should proactively include adjacent enhancements that strengthen the foundation — proper error handling, pagination, rate limiting, input validation, reusable abstractions, comprehensive test coverage — without being asked.
+Build for the future, not just the ticket. When executing a project, Claude should proactively include adjacent enhancements that strengthen the foundation - proper error handling, pagination, rate limiting, input validation, reusable abstractions, comprehensive test coverage - without being asked.
 
 **Scope expansion rules:**
 - If an enhancement adds less than ~30% effort and builds a stronger foundation, include it automatically. No need to flag it.
@@ -52,24 +52,30 @@ Build for the future, not just the ticket. When executing a project, Claude shou
 
 Detailed standards auto-load from `~/.claude/rules/`:
 
-- `communication-style.md` — Formatting, tone, writing rules
-- `git-conventions.md` — Commits, branches, workflow
-- `coding-conventions.md` — Languages, async patterns, security
-- `concurrent-sessions.md` — Multi-session and multi-machine safety
-- `development-workflow.md` — Localhost-first, shadcn/ui, testing, design systems
-- `session-types.md` — How to identify quick fix vs project vs strategy session
-- `best-of-best-modeling.md` — Model leading SaaS products in every decision
-- `brainstorming-question-filter.md` — Lead with a recommendation, never pure-options
-- `pushback-on-request.md` — Genuine challenge when asked, not validation
-- `tdd-loop-discipline.md` — Single-file tests during iteration, full suite at preflight
-- `use-gha-not-local-ci.md` — Push and use GitHub Actions, not local full builds
-- `code-review-graph-usage.md` — When (and when not) to use the code-review-graph MCP; the freshness law
-- `sharp-edges-convention.md` — Top prod-breaking foot-guns get an inline CLAUDE.md section + a CI/lint gate
-- `no-bash-heredocs.md` — Never heredocs through the Bash tool; use Write tool
-- `autopilot-and-scope-checks.md` — Scope anomalies pause autopilot
-- `starter-prompt-code-block-integrity.md` — One intact code block, every time
-- `session-handoffs-required.md` — Always deliver prompt + ship + summary
-- `session-loose-ends-audit.md` — At session close, account for every idea/aside with an honest disposition
+- `communication-style.md` - Formatting, tone, writing rules
+- `git-conventions.md` - Commits, branches, workflow
+- `coding-conventions.md` - Languages, async patterns, security
+- `concurrent-sessions.md` - Multi-session and multi-machine safety
+- `development-workflow.md` - Localhost-first, shadcn/ui, testing, design systems
+- `session-types.md` - How to identify quick fix vs project vs strategy session
+- `best-of-best-modeling.md` - Model leading SaaS products in every decision
+- `brainstorming-question-filter.md` - Lead with a recommendation, never pure-options
+- `pushback-on-request.md` - Genuine challenge when asked, not validation
+- `tdd-loop-discipline.md` - Single-file tests during iteration, full suite at preflight
+- `use-gha-not-local-ci.md` - Push and use GitHub Actions, not local full builds
+- `code-review-graph-usage.md` - When (and when not) to use the code-review-graph MCP; the freshness law
+- `sharp-edges-convention.md` - Top prod-breaking foot-guns get an inline CLAUDE.md section + a CI/lint gate
+- `no-bash-heredocs.md` - Heredocs only when short and plain; otherwise the Write tool, then run the file
+- `autopilot-and-scope-checks.md` - Scope anomalies pause autopilot
+- `starter-prompt-code-block-integrity.md` - One intact code block, every time
+- `session-handoffs-required.md` - Always deliver prompt + ship + summary
+- `session-loose-ends-audit.md` - At session close, account for every idea/aside with an honest disposition
+- `verify-before-done.md` - "Done" needs evidence from the exercised surface; new tests are seen to fail first
+- `research-first.md` - A research pass sized to the build, free sources first
+- `process-hygiene.md` - Stop what you started, by process id, never by name
+- `public-repos.md` - Nothing private in a public repository
+- `agent-fleet-cost.md` - An explicit model and effort on every agent in a fan-out
+- `graph-index-tool-adoption.md` - Measure an index tool against grep before adopting it
 
 ## Tech Stack
 
