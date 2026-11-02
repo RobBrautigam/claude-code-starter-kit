@@ -53,7 +53,13 @@ def planned_copies(with_hooks: bool) -> List[Tuple[Path, Path]]:
 
 
 def install(target: Path, dry_run: bool, force: bool, with_hooks: bool) -> Dict[str, List[str]]:
-    report: Dict[str, List[str]] = {"installed": [], "unchanged": [], "kept yours": [], "replaced (backup kept)": []}
+    report: Dict[str, List[str]] = {
+        "installed": [],
+        "unchanged": [],
+        "kept yours": [],
+        "replaced (backup kept)": [],
+        "your CLAUDE.md (never touched)": [],
+    }
     stamp = time.strftime("%Y%m%d-%H%M%S")
     for source, relative in planned_copies(with_hooks):
         destination = target / relative
@@ -76,7 +82,7 @@ def install(target: Path, dry_run: bool, force: bool, with_hooks: bool) -> Dict[
 
     claude_md = target / "CLAUDE.md"
     if claude_md.exists():
-        report["kept yours"].append("CLAUDE.md (never overwritten; compare it with CLAUDE.md.example)")
+        report["your CLAUDE.md (never touched)"].append("CLAUDE.md (compare it with CLAUDE.md.example for new rules)")
     else:
         report["installed"].append("CLAUDE.md (from CLAUDE.md.example: fill in the <placeholders>)")
         if not dry_run:
@@ -104,6 +110,8 @@ def main(argv: List[str]) -> int:
 
     print(f"{'DRY RUN: nothing written. ' if args.dry_run else ''}Target: {target}")
     for heading, items in report.items():
+        if heading.startswith("your CLAUDE.md") and not items:
+            continue
         print(f"\n{heading}: {len(items)}")
         for item in items[:200]:
             print(f"  - {item}")

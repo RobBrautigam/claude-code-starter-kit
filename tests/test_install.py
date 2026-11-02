@@ -50,8 +50,16 @@ class Install(unittest.TestCase):
         rule = self.target / "rules" / "git-conventions.md"
         rule.write_text("my own version\n", encoding="utf-8")
         result = self.run_install()
-        self.assertIn("kept yours: ", result.stdout)
+        self.assertIn("kept yours: 1", result.stdout)
+        self.assertIn("rerun with --force", result.stdout)
         self.assertEqual(rule.read_text(encoding="utf-8"), "my own version\n")
+
+    def test_rerun_does_not_offer_force_for_your_claude_md(self):
+        self.run_install()
+        result = self.run_install()
+        self.assertIn("kept yours: 0", result.stdout)
+        self.assertIn("your CLAUDE.md (never touched): 1", result.stdout)
+        self.assertNotIn("rerun with --force", result.stdout)
 
     def test_force_backs_up_before_replacing(self):
         self.run_install()
