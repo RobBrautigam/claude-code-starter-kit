@@ -108,7 +108,9 @@ def main(argv: List[str]) -> int:
     parser.add_argument("--with-hooks", action="store_true", help="also copy the guard hook and print its settings")
     args = parser.parse_args(argv)
 
-    target = Path(args.target).expanduser().resolve()  # the hook command needs an absolute path
+    # The hook command needs an absolute path. Anchored to the current folder first, because on
+    # Windows, Python 3.9's resolve() leaves a folder that does not exist yet relative.
+    target = (Path.cwd() / Path(args.target).expanduser()).resolve()
     report = install(target, args.dry_run, args.force, args.with_hooks)
 
     print(f"{'DRY RUN: nothing written. ' if args.dry_run else ''}Target: {target}")
