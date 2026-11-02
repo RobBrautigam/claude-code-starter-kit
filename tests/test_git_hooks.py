@@ -123,7 +123,7 @@ class CommitMsg(unittest.TestCase):
         folder = Path(tempfile.mkdtemp(prefix="commit-msg-"))
         try:
             path = folder / "MSG"
-            path.write_text(message, encoding="utf-8", newline="\n")
+            path.write_bytes(message.encode("utf-8"))  # bytes, so the hook reads LF on every platform
             return subprocess.run(["sh", str(COMMIT_MSG), str(path)], capture_output=True, text=True, timeout=30)
         finally:
             shutil.rmtree(folder, ignore_errors=True)
