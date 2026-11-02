@@ -23,7 +23,7 @@ Every Claude Code conversation falls into one of four types. Identify the type f
 3. Commit on the branch: `git add <paths> && git commit -m "<lowercase message>"`
 4. Push and let the ship skill handle PR creation + auto-merge: `git push -u origin fix/<short-description>` then invoke `/ship`.
 
-**Carve-out — when to skip the branch:** Single-line typo or comment fix where opening a PR adds more friction than the change is worth.
+**Carve-out - when to skip the branch:** Single-line typo or comment fix where opening a PR adds more friction than the change is worth.
 
 **Quick fix definition:** Fits in one sentence, fixes in under 30 minutes. If it grows beyond either, stop and create a project for it.
 
@@ -49,17 +49,17 @@ Every Claude Code conversation falls into one of four types. Identify the type f
 
 **Workflow:**
 1. Recognize this is a multi-step build (not a quick fix).
-2. Invoke the `project-scaffolder` skill — no need to ask. It creates `projects/<slug>/` with a full rich-context README, an empty `plan.md`, and an empty `report.md`.
+2. Invoke the `project-scaffolder` skill - no need to ask. It creates `projects/<slug>/` with a full rich-context README, an empty `plan.md`, and an empty `report.md`.
 3. Invoke the `project-manager` skill, which picks up the freshly-scaffolded project and kicks off the full Superpowers chain (brainstorm, plan, execute, ship).
 
 **Rules:**
 - If clearly multi-step, scaffold without asking. The filesystem (and tracker, if you use one) is the system of record and every meaningful piece of work belongs there.
-- If genuinely ambiguous (could be a quick fix or a project), ask once: *"This could go either way — want me to scaffold a project for this, or just handle it inline?"*
+- If genuinely ambiguous (could be a quick fix or a project), ask once: *"This could go either way - want me to scaffold a project for this, or just handle it inline?"*
 - Quick fixes never get scaffolded. The line: if it can be described in one sentence and fixed in under 30 minutes, it's a quick fix.
 
 ## Spin-off ideas mid-session
 
-A fifth pattern surfaces mid-project: an idea comes up that's worth pursuing but doesn't belong in the current project's scope. Do NOT silently absorb it (scope drift) and do NOT trust yourself to "come back to it later" (you won't). The right move is to invoke `project-scaffolder` mid-session in spin-off mode — it captures the verbatim trigger as the new project's `raw_input` and records the current project as the parent. The spin-off lands in `projects/<new-slug>/` in status `backlog` and the original session resumes. This is the kit's primary mechanism for preventing lost ideas.
+A fifth pattern surfaces mid-project: an idea comes up that's worth pursuing but doesn't belong in the current project's scope. Do NOT silently absorb it (scope drift) and do NOT trust yourself to "come back to it later" (you won't). The right move is to invoke `project-scaffolder` mid-session in spin-off mode - it captures the verbatim trigger as the new project's `raw_input` and records the current project as the parent. The spin-off lands in `projects/<new-slug>/` in status `backlog` and the original session resumes. This is the kit's primary mechanism for preventing lost ideas.
 
 ## How to tell the difference
 

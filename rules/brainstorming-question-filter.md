@@ -32,7 +32,7 @@ In peer-discussion mode:
 - If their proposed approach has a real flaw, name it directly.
 - Once the discussion converges, lock the decision and move.
 
-## How to ASK — inline by default, popup only for narrow cases
+## How to ASK - inline by default, popup only for narrow cases
 
 **Default: inline conversational text.** Ask the question directly in your chat output. Use a markdown bullet list for the 1-2 alternatives. The user types a one-line reply (or a redirect) and the conversation continues. This is the right shape for nearly every brainstorming question.
 
@@ -47,9 +47,9 @@ If those four conditions aren't all true, ask inline.
 
 **Hard ceilings:**
 - One `AskUserQuestion` per brainstorming session, maximum.
-- Never use `AskUserQuestion` to ask the user to confirm a recommendation you've already made — that's a yes/no, inline.
+- Never use `AskUserQuestion` to ask the user to confirm a recommendation you've already made - that's a yes/no, inline.
 - Never use `AskUserQuestion` when the user explicitly engaged on a topic. Peer discussion mode is inline only.
 
 ## Why this rule exists
 
-Without it, brainstorming sessions degrade into "Claude lists options, user picks." That delegates synthesis to the user instead of doing it for them — and burns time on questions only the assistant should be answering.
+Without it, brainstorming sessions degrade into "Claude lists options, user picks." That delegates synthesis to the user instead of doing it for them - and burns time on questions only the assistant should be answering.

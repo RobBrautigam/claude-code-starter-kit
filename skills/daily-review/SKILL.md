@@ -15,9 +15,9 @@ triggers:
 
 # Daily Review
 
-Quick check-in to surface today's projects. The weekly review already made the hard decisions — this just gets you moving.
+Quick check-in to surface today's projects. The weekly review already made the hard decisions - this just gets you moving.
 
-The skill is task-tracker-agnostic. Substitute the "task source" steps with whatever you actually use (filesystem README scan, ClickUp, Linear, GitHub issues, a SQL query — same flow shape).
+The skill is task-tracker-agnostic. Substitute the "task source" steps with whatever you actually use (filesystem README scan, ClickUp, Linear, GitHub issues, a SQL query - same flow shape).
 
 ---
 
@@ -25,9 +25,9 @@ The skill is task-tracker-agnostic. Substitute the "task source" steps with what
 
 Pull three datasets:
 
-1. **Today's scheduled projects** — projects with `target_date == today` and status in {todo, in_progress}.
-2. **Overdue items** — projects with `target_date < today` and status in {todo, in_progress}.
-3. **In-progress (any schedule)** — everything currently `in_progress` regardless of target_date.
+1. **Today's scheduled projects** - projects with `target_date == today` and status in {todo, in_progress}.
+2. **Overdue items** - projects with `target_date < today` and status in {todo, in_progress}.
+3. **In-progress (any schedule)** - everything currently `in_progress` regardless of target_date.
 
 Filter by repo scope when applicable so cross-repo work in the same tracker doesn't leak in.
 
@@ -50,11 +50,11 @@ The user can:
 - *"I'm in content mode, pull something from content pipeline"*
 - *"Reschedule X to tomorrow"*
 
-Make the changes in the task tracker. Don't re-plan the whole week — that's the weekly review's job.
+Make the changes in the task tracker. Don't re-plan the whole week - that's the weekly review's job.
 
 ### 3. Pick and go
 
-Once the user picks a project (or accepts #1), end the skill. Do NOT auto-invoke project-manager or brainstorming — let the user start the project session however they normally do.
+Once the user picks a project (or accepts #1), end the skill. Do NOT auto-invoke project-manager or brainstorming - let the user start the project session however they normally do.
 
 ---
 
@@ -64,8 +64,8 @@ Brief and energizing. Like a quick standup with yourself. Not a planning session
 
 ## Rules
 
-- No full pipeline analysis — that's the weekly review.
-- No reordering the whole queue — that's the weekly review.
+- No full pipeline analysis - that's the weekly review.
+- No reordering the whole queue - that's the weekly review.
 - Don't auto-start project sessions.
 - If nothing is scheduled for today, suggest running the weekly review.
-- Filter by repo when relevant — this skill is meant to be repo-scoped, not global.
+- Filter by repo when relevant - this skill is meant to be repo-scoped, not global.

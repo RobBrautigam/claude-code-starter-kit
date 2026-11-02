@@ -1,0 +1,65 @@
+#!/usr/bin/env sh
+# commit-msg: no AI attribution in commit messages.
+#
+# An AI coding agent is a tool the author used, not a contributor. A trailer
+# in a commit message follows the code into every clone, every fork, every
+# blame view and every contributor graph, and taking it out later means
+# rewriting published history. So this hook refuses two shapes:
+#
+#   Co-Authored-By: <anything>       any co-author trailer (blanket on purpose:
+#                                    a list of known tools is a list the next
+#                                    tool walks straight past)
+#   Generated with [<anything>]      the tool attribution line, and
+#   Generated with Claude ...        its unbracketed variants for known tools
+#
+# "Generated with" is anchored on a word boundary and must be followed by a
+# bracket or a tool name, so "regenerated with the new script" and "the
+# fixtures were generated with a seed" still pass.
+#
+# Only what the author wrote is read: `git commit --verbose` appends the staged
+# diff below a scissors line, and that diff may quote this very file.
+#
+# If a commit was blocked: take the line out of the message and commit again.
+# Never reach for --no-verify.
+#
+# Install: copy to .git/hooks/commit-msg (or your hooks folder) and make it
+# executable, or point git at a template folder for every new clone. See
+# hooks/README.md.
+
+msg_file="$1"
+[ -n "$msg_file" ] || exit 0
+[ -f "$msg_file" ] || exit 0
+
+written=$(
+  sed -e '/^#.*-\{6,\} *>8 *-\{6,\}/,$d' "$msg_file" \
+    | git stripspace --strip-comments
+)
+
+found=0
+
+if printf '%s\n' "$written" | grep -qiE '^[[:space:]]*co-authored-by:[[:space:]]*[^[:space:]]'; then
+  echo ""
+  echo "COMMIT BLOCKED: the message carries a Co-Authored-By trailer."
+  echo ""
+  printf '%s\n' "$written" | grep -iE '^[[:space:]]*co-authored-by:' | sed 's/^/    /'
+  echo ""
+  echo "  An AI agent is a tool the author used, not a contributor, and the"
+  echo "  trailer would follow the code into every clone from here on."
+  echo "  Take the line out of the commit message and commit again."
+  echo ""
+  found=1
+fi
+
+if printf '%s\n' "$written" | grep -qiE '(^|[^[:alnum:]])generated with[[:space:]]+(\[|(claude|anthropic|copilot|codex|cursor|gemini|chatgpt|gpt-[0-9]))'; then
+  echo ""
+  echo "COMMIT BLOCKED: the message carries a tool attribution line."
+  echo ""
+  printf '%s\n' "$written" | grep -iE 'generated with' | sed 's/^/    /'
+  echo ""
+  echo "  Say what the change does, not what wrote it."
+  echo "  Take the line out of the commit message and commit again."
+  echo ""
+  found=1
+fi
+
+exit $found

@@ -6,8 +6,8 @@ Usage:
     python perplexity_research.py --query "your query" [--model sonar] [--system-prompt "context"]
 
 Models:
-    sonar       — fast, good for most queries (default)
-    sonar-pro   — deeper, richer, use for complex/strategic research
+    sonar       - fast, good for most queries (default)
+    sonar-pro   - deeper, richer, use for complex/strategic research
 
 API key search order:
     1. PERPLEXITY_API_KEY environment variable
@@ -95,7 +95,7 @@ def call_perplexity(query: str, model: str, system_prompt: str, api_key: str) ->
         print(f"Response: {body}", file=sys.stderr)
         sys.exit(1)
     except urllib.error.URLError as e:
-        print(f"Error: Could not reach Perplexity API — {e.reason}", file=sys.stderr)
+        print(f"Error: Could not reach Perplexity API - {e.reason}", file=sys.stderr)
         sys.exit(1)
 
 

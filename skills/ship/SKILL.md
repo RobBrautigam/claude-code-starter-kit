@@ -9,30 +9,30 @@ Session-close checklist. Outputs: version bump, progress log entry, patch or rel
 
 **Prerequisite:** All code changes must already be committed before running this skill. Ship only creates session-close artifacts. If uncommitted code changes exist, commit them first.
 
-**File writing rule (mandatory):** Every markdown artifact in this skill — progress log entries, patch reports, completion reports, README updates — MUST be written with the `Write` or `Edit` tool. **Never use bash heredocs** (`cat > file <<'EOF'`, `cat << EOF >> file`, `printf "..." >`, `echo ... >>`). Heredocs fail on Windows git-bash when content contains backticks, code fences, `$`, single quotes, or multi-line markdown. The authoritative source is the `no-bash-heredocs` rule.
+**File writing rule (mandatory):** Every markdown artifact in this skill - progress log entries, patch reports, completion reports, README updates - MUST be written with the `Write` or `Edit` tool. **Never use bash heredocs** (`cat > file <<'EOF'`, `cat << EOF >> file`, `printf "..." >`, `echo ... >>`). Heredocs fail on Windows git-bash when content contains backticks, code fences, `$`, single quotes, or multi-line markdown. The authoritative source is the `no-bash-heredocs` rule.
 
 ---
 
 ## Session types
 
-- **Release** (minor version bump) — A project was completed. One project = one minor version.
-- **Patch** (patch bump) — Bug fixes, polish, improvements, backfills, config changes. No project completed.
-- **Major** (major bump) — Reserved for milestone releases. User's call, never automatic.
+- **Release** (minor version bump) - A project was completed. One project = one minor version.
+- **Patch** (patch bump) - Bug fixes, polish, improvements, backfills, config changes. No project completed.
+- **Major** (major bump) - Reserved for milestone releases. User's call, never automatic.
 
 When in doubt, default to patch.
 
 ---
 
-## Step 0: Preflight — optional review checkpoint
+## Step 0: Preflight - optional review checkpoint
 
 If you have a code-review tool (Codex, second-opinion agent, etc.), offer it now:
 
 ```
 Before I ship: want a second-opinion review first?
 
-  Standard review        — good for UI-only / config / docs / progress-log-only
-  Adversarial review     — RECOMMENDED for data mutations, auth, cron, migrations, external APIs
-  Skip                   — you confirm the change is trivial enough
+  Standard review        - good for UI-only / config / docs / progress-log-only
+  Adversarial review     - RECOMMENDED for data mutations, auth, cron, migrations, external APIs
+  Skip                   - you confirm the change is trivial enough
 
 Pick one and I'll continue with the rest of the ship checklist after.
 ```
@@ -41,7 +41,7 @@ Wait for the review to complete (if picked), incorporate findings, then continue
 
 ---
 
-## Step 1: Preflight — uncommitted work check
+## Step 1: Preflight - uncommitted work check
 
 ```bash
 git status --short
@@ -50,8 +50,8 @@ git diff --stat
 
 If anything is uncommitted or untracked outside the standard ship paths (progress log, projects/, version file):
 
-- For tracked changes — ask the user whether they belong in this ship or should be reverted.
-- For untracked files — ask explicitly. The default ship commit only stages specific paths; untracked files outside those paths would be silently dropped.
+- For tracked changes - ask the user whether they belong in this ship or should be reverted.
+- For untracked files - ask explicitly. The default ship commit only stages specific paths; untracked files outside those paths would be silently dropped.
 
 Do not proceed until the working tree is clean enough to ship safely.
 
@@ -75,7 +75,7 @@ Decide kind based on session type:
 - Patch → patch
 - Major → ask the user explicitly; never default to major
 
-Capture the new version string — you'll reference it in every subsequent artifact.
+Capture the new version string - you'll reference it in every subsequent artifact.
 
 ---
 
@@ -85,12 +85,12 @@ These four writes are independent. Fire them in parallel.
 
 ### 3a. Progress log entry
 
-Append a new entry to your progress log (commonly `docs/progress-log.md`). Reverse chronological — newest entry at the top.
+Append a new entry to your progress log (commonly `docs/progress-log.md`). Reverse chronological - newest entry at the top.
 
 Entry shape:
 
 ```markdown
-## Session N — vX.Y.Z (YYYY-MM-DD HH:MM TZ)
+## Session N - vX.Y.Z (YYYY-MM-DD HH:MM TZ)
 
 <one-paragraph summary of what changed and why>
 
@@ -108,7 +108,7 @@ Entry shape:
 
 ### 3b. Patch report or completion report
 
-**Patch report** (for patch sessions) — write to `docs/patches/vX.Y.Z.md`:
+**Patch report** (for patch sessions) - write to `docs/patches/vX.Y.Z.md`:
 
 ```markdown
 # Patch vX.Y.Z
@@ -128,17 +128,17 @@ Entry shape:
 
 ## Verification
 
-- `<command>` — <expected outcome>
+- `<command>` - <expected outcome>
 
 ## Deferred
 
-- <item> — <why>
+- <item> - <why>
 ```
 
-**Completion report** (for release sessions that close a project) — write to `projects/<slug>/report.md`:
+**Completion report** (for release sessions that close a project) - write to `projects/<slug>/report.md`:
 
 ```markdown
-# <Project Title> — Completion Report
+# <Project Title> - Completion Report
 
 **Shipped:** YYYY-MM-DD as vX.Y.Z
 **PR:** #<number>
@@ -153,7 +153,7 @@ Entry shape:
 
 ## Files changed
 
-- `<path>` — <one-line purpose>
+- `<path>` - <one-line purpose>
 - ...
 
 ## What's next
@@ -163,11 +163,11 @@ Entry shape:
 
 ### 3c. Update the project README
 
-Check off completed items in `projects/<slug>/README.md`. Update the "Files changed" and "Architecture notes" sections if appropriate. Do NOT update status / phase / tags in the README — those live in your task tracker, not in narrative files.
+Check off completed items in `projects/<slug>/README.md`. Update the "Files changed" and "Architecture notes" sections if appropriate. Do NOT update status / phase / tags in the README - those live in your task tracker, not in narrative files.
 
 ### 3d. Mark the project done (if release session)
 
-If this session closed the project — update its status in your task tracker (database row, ClickUp task, Linear issue, GitHub issue, or whatever you use) to "done".
+If this session closed the project - update its status in your task tracker (database row, ClickUp task, Linear issue, GitHub issue, or whatever you use) to "done".
 
 If this is a patch session, leave status as `in_progress`.
 
@@ -201,8 +201,8 @@ For shared / engineer-owned repos with CODEOWNERS, wait for the auto-requested r
 A project is NOT shipped until the change is live in production. If the repo deploys on push to main:
 
 1. Wait for the deploy to complete (`gh run watch`, `railway logs --deployment`, or your platform's equivalent).
-2. Verify the new version is serving — hit a `/health` endpoint or a page that surfaces the version string.
-3. Probe a live affordance the change introduced — a new column, a new copy string, a new route. DOM-level verification, not just "build succeeded."
+2. Verify the new version is serving - hit a `/health` endpoint or a page that surfaces the version string.
+3. Probe a live affordance the change introduced - a new column, a new copy string, a new route. DOM-level verification, not just "build succeeded."
 
 If the deploy is intentionally gated (feature flag, scheduled cutover), say so explicitly at closeout and schedule the verification for the flip date. Don't silently close on a build-but-not-live state.
 
@@ -216,7 +216,7 @@ Produce the closeout message in chat. Two formats:
 
 ```
 ─────────────────────────────────────────
-🚢 Shipped vX.Y.Z — <Project Title>
+🚢 Shipped vX.Y.Z - <Project Title>
 ─────────────────────────────────────────
 
 What was built:
@@ -238,7 +238,7 @@ Next up: <one-line recommendation>
 ### Patch close
 
 ```
-Session N closed — vX.Y.Z (patch)
+Session N closed - vX.Y.Z (patch)
 
 - <bullet>
 - <bullet>

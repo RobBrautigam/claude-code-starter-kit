@@ -10,8 +10,8 @@ Tests serve two purposes that need different commands:
 
 | Purpose | Command | When |
 |---|---|---|
-| **Iteration feedback** — am I close on this one component? | `pnpm test:file <path>` or `pnpm test:changed` | After every edit during TDD |
-| **Preflight verification** — did I break anything else? | `pnpm test` (full suite) | Before commit batches, at ship time, on PR open |
+| **Iteration feedback** - am I close on this one component? | `pnpm test:file <path>` or `pnpm test:changed` | After every edit during TDD |
+| **Preflight verification** - did I break anything else? | `pnpm test` (full suite) | Before commit batches, at ship time, on PR open |
 
 Iteration feedback should be cheap (under 5 seconds, single-file scope). Preflight verification is the expensive but rare gate.
 
@@ -45,13 +45,13 @@ Full TypeScript build + full vitest suite + (for `:prod`) production bundle buil
 
 ## What this rule prevents
 
-A 3-hour TDD loop where the full test suite runs 25 times = sustained CPU pegging on a 16-thread laptop. Each full-suite run spawns 14-16 vitest workers (each ~12 threads, ~250-400 MB), pegging ~5,500% of one core for 20-90 seconds. Targeted runs use a fraction of that — same correctness signal during iteration, drastically lower system load.
+A 3-hour TDD loop where the full test suite runs 25 times = sustained CPU pegging on a 16-thread laptop. Each full-suite run spawns 14-16 vitest workers (each ~12 threads, ~250-400 MB), pegging ~5,500% of one core for 20-90 seconds. Targeted runs use a fraction of that - same correctness signal during iteration, drastically lower system load.
 
 ## What this rule does NOT change
 
 - Full `pnpm test` is still the right preflight gate. Don't ship without it passing.
-- Branch-level CI still runs the full suite — local iteration discipline doesn't replace CI.
+- Branch-level CI still runs the full suite - local iteration discipline doesn't replace CI.
 
 ## Related discipline
 
-- See `use-gha-not-local-ci.md` — when CI is configured, prefer pushing and using GitHub Actions over running the full suite locally.
+- See `use-gha-not-local-ci.md` - when CI is configured, prefer pushing and using GitHub Actions over running the full suite locally.

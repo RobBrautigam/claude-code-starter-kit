@@ -7,18 +7,18 @@ description: Session guardrails and execution discipline for Claude Code convers
 
 Session guardrails and project execution. Keeps work on-track, prevents scope creep, enforces the Superpowers workflow chain, and tracks progress.
 
-This skill is filesystem + git driven by default. If your setup has a richer task tracker (database, ClickUp, Linear, Jira), substitute the "task source" steps with queries against it — the workflow shape stays the same.
+This skill is filesystem + git driven by default. If your setup has a richer task tracker (database, ClickUp, Linear, Jira), substitute the "task source" steps with queries against it - the workflow shape stays the same.
 
 ---
 
 ## When to invoke
 
 - User says: "let's work on X", "next project", "continue X", "what's next", "start the X project", "I want to build Y", or pastes a starter prompt naming a project.
-- User pastes a multi-step build request that isn't a quick fix — invoke the `project-scaffolder` skill first to create the project, then resume here.
+- User pastes a multi-step build request that isn't a quick fix - invoke the `project-scaffolder` skill first to create the project, then resume here.
 
 ## When NOT to invoke
 
-- One-sentence bug fixes. Use a Quick Fix flow instead — branch off main, fix, push, ship.
+- One-sentence bug fixes. Use a Quick Fix flow instead - branch off main, fix, push, ship.
 - Strategy / planning conversations with no implementation work.
 - Pure exploratory questions ("how does X work?", "what do you think about Y?").
 
@@ -29,12 +29,12 @@ This skill is filesystem + git driven by default. If your setup has a richer tas
 ### Step 1: Identify the project
 
 The project is either:
-- **Already scaffolded** — its files live at `projects/<slug>/README.md` (or your repo's equivalent path). Read the README first.
-- **Brand new** — the user just described what they want to build. Pause and invoke the `project-scaffolder` skill before continuing. It creates `projects/<slug>/README.md` with the full rich context (origin brief, definition of done, starter prompt) plus empty `plan.md` and `report.md` stubs. Once scaffolding completes, resume this skill from Step 2 with the freshly-scaffolded project.
+- **Already scaffolded** - its files live at `projects/<slug>/README.md` (or your repo's equivalent path). Read the README first.
+- **Brand new** - the user just described what they want to build. Pause and invoke the `project-scaffolder` skill before continuing. It creates `projects/<slug>/README.md` with the full rich context (origin brief, definition of done, starter prompt) plus empty `plan.md` and `report.md` stubs. Once scaffolding completes, resume this skill from Step 2 with the freshly-scaffolded project.
 
 ### Step 2: Reconcile scope against canonical sources
 
-The starter prompt the user pasted is ONE input — not the binding scope. Before brainstorming, reconcile against:
+The starter prompt the user pasted is ONE input - not the binding scope. Before brainstorming, reconcile against:
 
 1. The project's `README.md`
 2. Any existing plan at `projects/<slug>/plan.md`
@@ -44,9 +44,9 @@ The starter prompt the user pasted is ONE input — not the binding scope. Befor
 
 For each source, ask: *"Does the user-supplied framing match what these documents say the project is?"*
 
-**If everything aligns** — proceed silently to Step 3.
+**If everything aligns** - proceed silently to Step 3.
 
-**If anything diverges** — STOP and present a scope-divergence report:
+**If anything diverges** - STOP and present a scope-divergence report:
 
 1. TL;DR: "I found a scope divergence between the starter prompt and the canonical project record."
 2. What the canonical sources say (bullets).
@@ -69,29 +69,29 @@ git pull --ff-only
 git checkout -b feat/<project-slug>
 ```
 
-If you're already on `feat/<project-slug>`, you're resuming an in-progress session — skip the branch creation.
+If you're already on `feat/<project-slug>`, you're resuming an in-progress session - skip the branch creation.
 
-If you're on a different feature branch from a parallel project — STOP. This is a scope anomaly. Confirm with the user before continuing.
+If you're on a different feature branch from a parallel project - STOP. This is a scope anomaly. Confirm with the user before continuing.
 
 **Branch communication template:** *"Creating branch `feat/<slug>` off latest main. All project work happens here. Production won't change until we merge this back to main at session close."*
 
 ### Step 4: Design or resume
 
-> **MANDATORY GUARD — do not skip.**
+> **MANDATORY GUARD - do not skip.**
 >
 > Brainstorming is required UNLESS a saved plan already exists at `projects/<slug>/plan.md`. The existence of an origin brief, a starter prompt, a status field, or a "Session N" framing is **not** sufficient. Only a saved plan file authorizes a resume.
 
 **No saved plan exists (new project):**
 
-1. Invoke `superpowers:brainstorming` — explores requirements, asks clarifying questions, proposes 2-3 approaches, presents a design, and writes a design spec to `docs/specs/`. Every project goes through this regardless of perceived simplicity.
+1. Invoke `superpowers:brainstorming` - explores requirements, asks clarifying questions, proposes 2-3 approaches, presents a design, and writes a design spec to `docs/specs/`. Every project goes through this regardless of perceived simplicity.
 
-   Claude makes architecture and engineering decisions autonomously. Clarifying questions focus on UX, functionality, and user-facing behavior — not implementation details. Always present a recommended option when showing approaches.
+   Claude makes architecture and engineering decisions autonomously. Clarifying questions focus on UX, functionality, and user-facing behavior - not implementation details. Always present a recommended option when showing approaches.
 
 2. When the brainstorming skill transitions to `superpowers:writing-plans`, save a copy of the plan to `projects/<slug>/plan.md` for permanent record.
 
 3. The writing-plans skill will ask the user to choose an execution approach:
-   - **Subagent-Driven (recommended)** — Fresh subagent per task with two-stage code review between tasks.
-   - **Inline Execution** — Execute tasks sequentially in the current session with checkpoints.
+   - **Subagent-Driven (recommended)** - Fresh subagent per task with two-stage code review between tasks.
+   - **Inline Execution** - Execute tasks sequentially in the current session with checkpoints.
 
 **Saved plan exists (resuming):**
 
@@ -150,7 +150,7 @@ Draft PRs give Slack / GitHub integration something to broadcast and create a vi
 ### When bugs are encountered
 
 - **STOP.** Do not guess at fixes.
-- Invoke **`superpowers:systematic-debugging`** — four-phase approach: investigate root cause, analyze patterns, form hypothesis, then implement fix.
+- Invoke **`superpowers:systematic-debugging`** - four-phase approach: investigate root cause, analyze patterns, form hypothesis, then implement fix.
 - Only after root cause is identified, write a failing test case, then fix.
 
 ### When multiple independent failures appear
@@ -160,7 +160,7 @@ Draft PRs give Slack / GitHub integration something to broadcast and create a vi
 
 ### Scope monitoring
 
-**Proactive expansion (default):** Adjacent enhancements under ~30% extra effort are included automatically — mention them in progress updates without asking permission.
+**Proactive expansion (default):** Adjacent enhancements under ~30% extra effort are included automatically - mention them in progress updates without asking permission.
 
 **Flagged expansion:** Enhancements over ~30% extra effort: recommend with reasoning. Default to inclusion if the user doesn't object.
 
@@ -175,7 +175,7 @@ Ideas that surface mid-project are the most valuable thing to capture, and the e
 
 1. Pause the current work briefly.
 2. Invoke `project-scaffolder` with the spin-off as input. Tell the scaffolder the parent project's slug so the lineage gets recorded in the new project's `Session Context` block.
-3. The scaffolder creates `projects/<spin-off-slug>/` and writes the rich context. No tracker insert needed if you don't use one — the README is the record.
+3. The scaffolder creates `projects/<spin-off-slug>/` and writes the rich context. No tracker insert needed if you don't use one - the README is the record.
 4. Return to the original project. The spin-off is now in `projects/` waiting for the weekly review or daily pick.
 
 This pattern is how the kit prevents the "I'll remember to come back to this" failure mode. You almost never remember. Scaffolding takes 30 seconds and makes the idea concrete instead of a fading thought.
@@ -201,19 +201,19 @@ Invoke your `ship` skill (or equivalent session-close workflow). Ship handles ve
 
 ### Before invoking ship
 
-1. **Verify completion** — run `superpowers:verification-before-completion`.
-2. **Optional review checkpoint** — if you have a Codex review skill (or any second-opinion review tool), offer it now:
+1. **Verify completion** - run `superpowers:verification-before-completion`.
+2. **Optional review checkpoint** - if you have a Codex review skill (or any second-opinion review tool), offer it now:
    - Adversarial review when the session touched data mutations, auth, cron jobs, migrations, or unattended production code.
    - Standard review for UI-only / config / docs.
    - Skip only for trivial changes.
-3. **Finish the branch** — if work was done in a worktree, run `superpowers:finishing-a-development-branch`. Otherwise skip.
-4. **Summarize against the plan** — report items completed vs total plan items.
+3. **Finish the branch** - if work was done in a worktree, run `superpowers:finishing-a-development-branch`. Otherwise skip.
+4. **Summarize against the plan** - report items completed vs total plan items.
 
 ---
 
 ## Key principles
 
-- **Claude is the technical lead.** Own architecture and engineering decisions. State what was chosen, give a one-line reason, note one alternate path considered. Ask about UX, functionality, and user-facing behavior — not implementation details.
+- **Claude is the technical lead.** Own architecture and engineering decisions. State what was chosen, give a one-line reason, note one alternate path considered. Ask about UX, functionality, and user-facing behavior - not implementation details.
 - **Always recommend.** Lead with a clear recommendation and reasoning. Never present a "you pick" moment on the technical side.
 - **The starter prompt is one input, not the scope.** Reconcile against the canonical sources (README, plan, sibling READMEs, recent reports) before brainstorming. Silent scope cuts and silent scope expansions both get surfaced.
 - **Build it right.** Proper error handling, validation, pagination, test coverage, and reusable patterns are the baseline, not extras.
@@ -221,7 +221,7 @@ Invoke your `ship` skill (or equivalent session-close workflow). Ship handles ve
 - **Use Superpowers at every step.** Brainstorm before building. Plan before coding. Test before implementing. Verify before claiming. Review before merging.
 - **One project per session.** Small projects might fit two, but never split focus on large ones.
 - **Evidence before assertions.** Run the code, check the output, verify the deploy before claiming something works.
-- **Branch communication.** Every project session runs on a feature branch with a draft PR. Communicate every branch operation in plain English (not git jargon) — users who are still learning git appreciate the translation.
+- **Branch communication.** Every project session runs on a feature branch with a draft PR. Communicate every branch operation in plain English (not git jargon) - users who are still learning git appreciate the translation.
 
 ---
 

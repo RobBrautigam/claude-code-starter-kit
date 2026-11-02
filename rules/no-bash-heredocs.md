@@ -1,93 +1,55 @@
-# No Bash Heredocs Through The Bash Tool
+# Heredocs Through the Bash Tool: Short and Plain Only
 
-**Never use bash heredocs through the Bash tool.** No exceptions, no content-type carve-outs, no platform carve-outs. This applies to `<<`, `<<-`, `<<EOF`, `<<'EOF'`, `<<"EOF"`, `cat > file <<…`, `cat << … >> file`, and every variant.
+**Anything substantial goes through the Write tool, then runs as a file.** A heredoc through the
+Bash tool is fine for a short, plain snippet (roughly 20 lines or fewer, no backslashes). Past
+that, or with a backslash anywhere in the body, write the file first.
 
-The delimiter being quoted (`<< 'EOF'`) does NOT protect you. The failure is upstream of the shell at the Bash tool's command-wrapping layer, not at the shell parser.
+## Why (what goes wrong)
 
-## Why (root cause)
+The Bash tool hands your command to bash through its own wrapping layer, and both layers can change
+the bytes of a heredoc body before the program reads them:
 
-The Bash tool wraps the command string before passing it to the underlying shell process. When the heredoc body contains a single apostrophe — extremely common in natural-language prose, project descriptions, and Python code with single-quoted strings — the apostrophe terminates the outer wrapper. The shell then parses the remainder as regular shell code and dies on an unmatched quote dozens of lines later.
+- **Backslashes get rewritten.** Under an unquoted delimiter (`<<EOF`), bash itself rewrites `\\`,
+  `\$` and backticks in the body. Under any delimiter, two backslashes in a row can arrive as one,
+  because the tool layer processes them before bash reads the quotes. A regex, a Windows path or a
+  Unicode escape in a heredoc-fed Python script is exactly where this bites.
+- **Quoting surprises.** Prose bodies with apostrophes, backticks, `$` and code fences are where a
+  wrapper's quoting most often ends early, and the failure shows up dozens of lines later as an
+  "unexpected EOF".
+- **Long bodies fail far from the cause,** and a failed heredoc is usually retried as another
+  heredoc. The recovery is always the Write tool, so start there.
 
-Verified failure modes:
-- `python << 'PY' … PY` with prose containing `Pareto's`, `Murphy's`, `it's` → `unexpected EOF while looking for matching `'``.
-- Markdown bodies with code fences (`` ``` ``) and `$` template variables.
-- Python scripts with triple-quoted strings containing `"`.
-- Reproduced on Windows git-bash AND Unix shells. This is a Claude Code transport-layer issue, not a shell issue.
-
-The `'EOF'` delimiter cannot save you. By the time the shell parses the delimiter, the outer wrapper has already terminated.
+The kit's `hooks/guard_bash.py` refuses the backslash shapes (an unquoted delimiter with any
+backslash in the body, or two backslashes in a row under any delimiter).
 
 ## Decision tree (apply at the moment of choice)
 
-When about to run code via the Bash tool, ask exactly these questions in order:
+1. **A single shell command with no prose arguments** (`git status`, `pytest tests/`,
+   `gh pr list`): Bash tool, direct.
+2. **A short heredoc, quoted delimiter (`<<'EOF'`), no backslashes, a few lines:** fine.
+3. **Anything else** (a multi-line script, prose, any backslash, anything you would hate to debug):
+   write the file with the Write tool, then run it with `python path/to/file.py` or
+   `bash path/to/file.sh`.
 
-1. **Single shell command, no prose arguments?** (`git status`, `npx supabase db reset`, `railway up`, `pytest tests/`, `gh pr list`, etc.)
-   → Bash tool, direct. **Safe.**
-
-2. **`python -c "…"` or `bash -c "…"` on a single short line (< ~100 chars) with NO apostrophes, backticks, `$`, or unescaped double quotes in the body?**
-   → Bash tool, direct. **Safe.**
-
-3. **Anything else** — any multi-line script, any heredoc, any content with prose, any content with apostrophes / backticks / `$` / quotes?
-   → **Write the script to a file via the `Write` tool, then execute it via Bash with `python path/to/file.py` or `bash path/to/file.sh`.** Always. No exceptions.
-
-Set the bar LOW. A 3-line Python snippet with a single apostrophe is unsafe via heredoc. Defaulting to Write+execute costs 1 extra tool call in the happy case but eliminates the entire failure class.
-
-## Two distinct cases — use the right tool for each
+## Two distinct cases: use the right tool for each
 
 | Goal | Right pattern | Wrong pattern |
 |---|---|---|
-| Create a file with content (markdown, JSON, config, README, progress log) | `Write` tool directly to the destination path | A Python script that calls `path.write_text(...)` to do the same write; or `cat > file <<EOF` |
-| Run multi-line logic (DB ops + filesystem + verification + branching) | `Write` tool to create a `.py` script (canonical path: `tmp/<purpose>.py`), then `python tmp/<purpose>.py` | `python <<'PY' … PY` heredoc; or `cat > /tmp/x.py <<'PY' … PY` then `python /tmp/x.py` |
+| Create a file with content (markdown, JSON, config, README) | the Write tool, straight to the destination path | a script that calls `write_text(...)` to do the same write; or `cat > file <<EOF` |
+| Run multi-line logic | the Write tool to create `tmp/<purpose>.py`, then `python tmp/<purpose>.py` | `python - <<'PY' ... PY` with a long or backslash-heavy body |
 
-Don't write a Python script just to write a markdown file. Write the markdown file directly.
+## Scripted edits keep each file's line endings
 
-## Banned anti-pattern: "heredoc-then-fallback"
-
-The cycle that wastes time:
-1. Try `cat > file <<'EOF' … EOF`
-2. Heredoc fails on an apostrophe
-3. Recover by switching to `Write` tool
-
-**Skip step 1.** The recovery is the right answer; trying the heredoc first is the bug. If the content has prose or could have prose, go straight to `Write`+execute.
-
-## Canonical patterns (copy these)
-
-### Multi-line Python with prose
-
-```
-Write tool:
-  file_path: <repo>/tmp/scaffold_thing.py
-  content: |
-    title = "Murphy's Law"   # apostrophes are fine inside Python source
-    ...
-
-Bash tool:
-  command: python <repo>/tmp/scaffold_thing.py
-```
-
-### Multi-line markdown (e.g. progress log entry, README)
-
-```
-Write tool:
-  file_path: <repo>/projects/<slug>/README.md
-  content: |
-    # Project Title
-    ...
-```
-
-(No Python intermediate. No heredoc.)
-
-### Short, safe one-liner
-
-```
-Bash tool:
-  command: python -c "from mymodule import foo; print(foo())"
-```
-
-(No apostrophes, no backticks, no `$`, no unescaped quotes, single line, well under 100 chars.)
+A script that rewrites files can silently change CRLF to LF or the reverse (GNU `sed -i` in Git
+Bash turns CRLF into LF; Python's text mode on Windows writes CRLF). That shows up as a diff of
+every line in the file. Before and after a scripted edit, count the line endings in bytes
+(`open(p, "rb").read().count(b"\r\n")`), prefer the Edit tool for small changes, and write files
+back in the ending they had. A `.gitattributes` file settles it for a whole repository.
 
 ## Where to put temp scripts
 
-- Canonical location: `tmp/` inside the repo (add to `.gitignore` if not already).
-- Use a descriptive filename: `tmp/scaffold_seo.py`, `tmp/audit_pipeline.py`, not `tmp/x.py`.
-- Do NOT write to `/tmp/` (Unix tmp). It's git-bash-specific on Windows and not consistent across environments.
-- Do NOT promote ad-hoc scripts into permanent paths like `scripts/`. Those are for committed, reused tooling — not single-use scaffolding.
+- Canonical location: `tmp/` inside the repo (add it to `.gitignore`).
+- Descriptive names: `tmp/scaffold_seo.py`, not `tmp/x.py`.
+- Not `/tmp/`: it means different things in Git Bash on Windows and on Unix, and parallel sessions
+  share it.
+- Do not promote one-off scripts into `scripts/`. That folder is for committed, reused tooling.

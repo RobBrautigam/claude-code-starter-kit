@@ -88,7 +88,7 @@ For each repo now in the dev root, set up the baseline (generate drafts by READI
 
 End with one table: every repo · new path · clean/pushed ✓ · CLAUDE.md ✓ · .claude/ ✓ · flags cleared. The end state to aim for: **the operator can answer "where is X?" for every project on the machine with one rule, and every repo boots Claude Code with real context.**
 
-Then offer the natural next step: with everything in one flat root, the machine is ready for multi-window parallel work - the sibling-worktree + orchestrator method lives at https://github.com/RobBrautigam/claude-code-orchestrator.
+Then offer the natural next step: with everything in one flat root, the machine is ready for multi-window parallel work - the sibling-worktree + orchestrator method lives at https://github.com/RobBrautigam/ai-orchestrator.
 
 ## Do not
 

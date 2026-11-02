@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+tmp/
+scratch-clone/
+.DS_Store
+Thumbs.db
+.pytest_cache/

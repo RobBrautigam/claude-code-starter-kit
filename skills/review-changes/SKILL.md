@@ -9,12 +9,12 @@ Use the `code-review-graph` MCP knowledge graph to review a changeset by its bla
 
 ## When NOT to use (read first)
 
-- **Repos under ~100 files** — read the diff directly.
-- **A small, self-contained diff** (one file, no shared utilities) — read it.
+- **Repos under ~100 files** - read the diff directly.
+- **A small, self-contained diff** (one file, no shared utilities) - read it.
 
-Reach for the graph when the diff touches shared utilities, core modules, or anything with many dependents — where "what else does this affect" isn't obvious from the diff alone. Composes with `superpowers:requesting-code-review` and an independent adversarial review pass (e.g. `/codex:review` if you use the Codex plugin).
+Reach for the graph when the diff touches shared utilities, core modules, or anything with many dependents - where "what else does this affect" isn't obvious from the diff alone. Composes with `superpowers:requesting-code-review` and an independent adversarial review pass (e.g. `/codex:review` if you use the Codex plugin).
 
-## Freshness precondition (MANDATORY — do not skip)
+## Freshness precondition (MANDATORY - do not skip)
 
 Review against a stale graph misreports impact and coverage. Before trusting output:
 
@@ -24,10 +24,10 @@ Review against a stale graph misreports impact and coverage. Before trusting out
 
 ## Steps
 
-1. `detect_changes` — risk-scored change analysis for the diff.
-2. `get_affected_flows` — execution paths the change touches.
-3. For each high-risk function: `query_graph` pattern=`tests_for` — check test coverage.
-4. `get_impact_radius` — full blast radius.
+1. `detect_changes` - risk-scored change analysis for the diff.
+2. `get_affected_flows` - execution paths the change touches.
+3. For each high-risk function: `query_graph` pattern=`tests_for` - check test coverage.
+4. `get_impact_radius` - full blast radius.
 5. For any untested changes, suggest specific test cases.
 
 ## Output format
@@ -40,6 +40,6 @@ Group findings by risk (high/medium/low), each with:
 
 ## Trust boundary
 
-The graph scores risk; it does not catch logic bugs, security flaws, or business-rule violations. Use it to FOCUS a human/AI review on the high-blast-radius areas — not to replace reading the high-risk code. Pair with a deeper adversarial review (e.g. `/codex:adversarial-review`) for changes touching data mutations, auth, migrations, or scheduled jobs.
+The graph scores risk; it does not catch logic bugs, security flaws, or business-rule violations. Use it to FOCUS a human/AI review on the high-blast-radius areas - not to replace reading the high-risk code. Pair with a deeper adversarial review (e.g. `/codex:adversarial-review`) for changes touching data mutations, auth, migrations, or scheduled jobs.
 
 See `rules/code-review-graph-usage.md` for the full usage policy.

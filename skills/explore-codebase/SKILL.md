@@ -5,17 +5,17 @@ description: Navigate and understand a large codebase's structure using the code
 
 # Explore Codebase (code-review-graph)
 
-Use the `code-review-graph` MCP knowledge graph to explore and understand a codebase structurally — callers, callees, imports, communities, and execution flows — instead of grepping blind.
+Use the `code-review-graph` MCP knowledge graph to explore and understand a codebase structurally - callers, callees, imports, communities, and execution flows - instead of grepping blind.
 
 ## When NOT to use (read first)
 
-- **Repos under ~100 files** — plain Grep/Glob/Explore is faster; the graph adds nothing.
-- **Single-symbol lookups** ("where is `foo` defined") — one Grep answers it.
-- **Repos with no built graph and no time to build one** — see freshness below.
+- **Repos under ~100 files** - plain Grep/Glob/Explore is faster; the graph adds nothing.
+- **Single-symbol lookups** ("where is `foo` defined") - one Grep answers it.
+- **Repos with no built graph and no time to build one** - see freshness below.
 
 Reach for the graph when the question is *structural* and would otherwise take 3+ greps: "what's the architecture", "what are the major modules", "what calls into this subsystem", "trace the request flow".
 
-## Freshness precondition (MANDATORY — do not skip)
+## Freshness precondition (MANDATORY - do not skip)
 
 A stale graph gives confident WRONG answers (e.g. "0 callers" after a refactor). Before trusting any graph answer:
 
@@ -27,12 +27,12 @@ If you cannot confirm freshness, treat graph output as a hint and verify with a 
 
 ## Steps
 
-1. `list_graph_stats` / `uvx code-review-graph status` — overall metrics, languages, last-built commit.
-2. `get_architecture_overview` — high-level community structure.
+1. `list_graph_stats` / `uvx code-review-graph status` - overall metrics, languages, last-built commit.
+2. `get_architecture_overview` - high-level community structure.
 3. `list_communities`, then `get_community` for details on a module.
-4. `semantic_search_nodes` — find specific functions/classes by meaning.
-5. `query_graph` with `callers_of` / `callees_of` / `imports_of` — trace relationships.
-6. `list_flows` / `get_flow` — understand execution paths.
+4. `semantic_search_nodes` - find specific functions/classes by meaning.
+5. `query_graph` with `callers_of` / `callees_of` / `imports_of` - trace relationships.
+6. `list_flows` / `get_flow` - understand execution paths.
 
 ## Tips
 
