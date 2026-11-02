@@ -30,7 +30,7 @@ Use `python3` if that is what your system calls Python. The installer:
 
 Then restart Claude Code (or start a fresh conversation) so the rules load and the skills register. Open `~/.claude/CLAUDE.md` and fill in the placeholders.
 
-To check the kit itself on your machine: `python -m unittest discover -s tests` (standard library only; about a minute).
+To check the kit itself on your machine: `python -m unittest discover -s tests` (standard library only; one to two minutes, most of it the git hook tests).
 
 ### Or let your agent install it
 
