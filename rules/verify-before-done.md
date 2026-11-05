@@ -36,8 +36,21 @@ a green test nobody has ever seen fail.
   "everything verified".
 - **Re-check what describes a thing when the thing changes.** If a message summarizes a document and
   the document changes, re-read the message line by line before sending it again.
+- **A finished request is checked by someone who did not do the work.** When an agent says it
+  finished something you asked for, a fresh reviewer (a new agent with no stake in the work) opens
+  the real result and reads it against your original words, never against the agent's own summary,
+  and answers met or short. A summary written by the worker reads its own work generously; a
+  quantity you named ("all 200 pages") is counted, not assumed.
 - **Fix the shared path once.** Before changing a function to fix a bug, find every caller; a bug in
   a shared helper is fixed in the helper, not patched at each call site.
+
+## Rules are verified too
+
+A rule is a claim that something will not happen again. A new line in `rules/` names, the same day,
+the check that refuses its miss: a hook, a script, a lint or a test, listed in one register beside
+the rules (the rule, the check, the file it lives in). When no check can be written yet, the change
+that adds the rule says so and owes the check by name. A rules folder that grows every week with
+no checks behind it is an application problem, and more prose makes it worse.
 
 ## Why this rule exists
 

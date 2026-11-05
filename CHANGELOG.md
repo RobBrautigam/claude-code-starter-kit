@@ -2,6 +2,13 @@
 
 All notable changes to this kit. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). The current version is in [VERSION](./VERSION).
 
+## [1.2.0] - 2026-11-04
+
+### Changed
+
+- `verify-before-done`: a finished request is checked by a fresh reviewer that did not do the work, against the user's original words and never the agent's own summary; and a new section, "Rules are verified too": a new rule names the check that refuses its miss, the same day, in one register.
+- `concurrent-sessions`: keys live in one place outside every repository, with a pointer per worktree instead of a copied `.env`.
+
 ## [1.1.0] - 2026-11-02
 
 ### Added

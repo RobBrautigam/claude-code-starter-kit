@@ -58,6 +58,7 @@ The rule kicks in the moment two Claude *conversations* coexist on the same repo
 - Before editing a file, re-read it first. Another session may have changed it since you last saw it.
 - If you encounter a merge conflict or unexpected file state, stop and tell the user before resolving. Another session may be actively working on those files.
 - Never force-push or reset. Another session's work could be on the remote.
+- Keys live in one place, never copied per worktree. Keep them in one file outside every repository (scoped by repository if you have several), and give each worktree a one-line pointer to it, or a loader that reads it. A copied `.env` per worktree means a key you rotate stays stale everywhere else. Pair it with a pre-commit check that refuses a staged key file.
 - If a `git push` fails due to remote changes, run `git pull --rebase` and retry. If the rebase has conflicts, stop and tell the user.
 
 ## Playwright session isolation

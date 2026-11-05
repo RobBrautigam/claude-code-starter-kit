@@ -2,7 +2,7 @@
 
 An opinionated discipline and workflow layer for Claude Code: 14 skills, 24 rules, 3 safety hooks, a safe installer, a global `CLAUDE.md` template, a per-repo `CLAUDE.md` template, and a whole-computer organization system (the setup doctor).
 
-**Version 1.1.0.** What changed: [CHANGELOG.md](./CHANGELOG.md).
+**Version 1.2.0.** What changed: [CHANGELOG.md](./CHANGELOG.md).
 
 You get 14 skills (`setup-doctor`, `project-scaffolder`, `project-manager`, `ship`, `session-handoff`, `daily-review`, `weekly-review`, `skill-creator`, `research`, `scaffold-repo`, plus four code-knowledge-graph skills: `explore-codebase`, `debug-issue`, `refactor-safely`, `review-changes`), 24 rules covering communication, git, testing, verification, research, parallel sessions, process cleanup, public repositories, agent fleet cost, autopilot scope checks, code-graph usage, foot-gun gating, session-close auditing and the rest of the daily friction surface, and 3 hooks that refuse the worst accidents before they run. It sits on top of [Obra's Superpowers plugin](https://github.com/obra/superpowers), which provides the brainstorm-to-plan-to-execute-to-review chain. Superpowers is the engine. This kit is the operating system around it. The whole thing has been refined over many months of daily use by one builder who works entirely through Claude Code conversations rather than typing code by hand, often running multiple parallel sessions across many repos.
 
@@ -59,6 +59,12 @@ The agent will copy the files into `~/.claude/`, show you what landed, and tell 
 For the deep onboarding doc with more context, see [INSTRUCTIONS.md](./INSTRUCTIONS.md). For how the layers fit together, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ---
+
+## What's new in 1.2.0
+
+- **A finished request is checked by someone who did not do the work:** a fresh reviewer reads the real result against your own words, never the agent's summary ([verify-before-done](./rules/verify-before-done.md)).
+- **Rules are verified too:** a new rule names the check that refuses its miss, the same day ([verify-before-done](./rules/verify-before-done.md)).
+- **Keys live in one place,** with a pointer in each worktree instead of a copy ([concurrent-sessions](./rules/concurrent-sessions.md)).
 
 ## What's new in 1.1.0
 
