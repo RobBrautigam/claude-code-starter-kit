@@ -202,10 +202,6 @@ def command_groups(command: str, depth: int = 0) -> List[List[List[str]]]:
     return result
 
 
-def simple_commands(command: str, depth: int = 0) -> List[List[str]]:
-    return [words for group in command_groups(command, depth) for words in group]
-
-
 def strip_prefixes(words: List[str]) -> List[str]:
     """Drop NAME=value assignments and wrappers like sudo -u someone, env, timeout 30."""
     i = 0
@@ -392,7 +388,7 @@ DATA_DELETE_PATTERNS = [
 ]
 
 
-def check_data_delete(words: List[str], raw: str) -> Optional[Refusal]:
+def check_data_delete(words: List[str]) -> Optional[Refusal]:
     program = base(words[0])
     rest = [w.lower() for w in words[1:]]
     reason = None
@@ -461,7 +457,7 @@ def evaluate(tool_name: str, command: str, cwd: str) -> Optional[Refusal]:
     sql_client_seen = False
     for group in groups:
         for words in group:
-            for check in (lambda w: check_git(w, cwd), check_kill, lambda w: check_data_delete(w, without_bodies), check_rm):
+            for check in (lambda w: check_git(w, cwd), check_kill, check_data_delete, check_rm):
                 refusal = check(words)
                 if refusal:
                     return refusal
