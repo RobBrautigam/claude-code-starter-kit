@@ -54,7 +54,7 @@ PROTECTED_BRANCHES = {"main", "master"}
 WRAPPERS = {"sudo", "env", "time", "nice", "nohup", "command", "builtin", "exec", "xargs", "timeout"}
 SHELLS_WITH_C = {"bash", "sh", "zsh", "dash"}
 POWERSHELLS = {"powershell", "powershell.exe", "pwsh", "pwsh.exe"}
-SEPARATORS = {";", "&&", "||", "|", "&", "(", ")", "\n", ";;", "|&"}
+SEPARATOR_CHARS = frozenset(";&|()\n")  # a token made only of these separates commands: ; && || | & ( ) ;; |&
 # The override prefix, in bash form (GUARD_OK="why" cmd) or PowerShell form ($env:GUARD_OK="why"; cmd).
 # It covers the one command (or pipeline) that follows it, never the rest of a chained line.
 OVERRIDE_RE = re.compile(
@@ -157,7 +157,7 @@ def drop_redirects(tokens: List[str]) -> List[str]:
     for token in tokens:
         if skip_next:
             skip_next = False
-            if not (token in SEPARATORS or set(token) <= set(";&|()\n")):
+            if not (set(token) <= SEPARATOR_CHARS):
                 continue
         if is_redirect(token):
             if kept and kept[-1].isdigit():
@@ -175,7 +175,7 @@ def command_groups(command: str, depth: int = 0) -> List[List[List[str]]]:
     groups: List[List[List[str]]] = [[]]
     current: List[str] = []
     for token in drop_redirects(tokenize(command)):
-        if token in SEPARATORS or set(token) <= set(";&|()\n"):
+        if set(token) <= SEPARATOR_CHARS:
             if current:
                 groups[-1].append(current)
             current = []
@@ -386,6 +386,7 @@ DATA_DELETE_PATTERNS = [
     (re.compile(r"\bdrop\s+(table|database|schema)\b", re.IGNORECASE), "a DROP statement"),
     (re.compile(r"\btruncate\s+(table\s+)?[A-Za-z_\"`]", re.IGNORECASE), "a TRUNCATE statement"),
 ]
+HUMAN_WORD_FIX = "get the human's word for this exact action, then use the override"
 
 
 def check_data_delete(words: List[str]) -> Optional[Refusal]:
@@ -401,14 +402,14 @@ def check_data_delete(words: List[str]) -> Optional[Refusal]:
     elif program in ("supabase", "npx") and "reset" in rest and "--linked" in rest:
         reason = "supabase db reset --linked wipes the linked (remote) database"
     if reason:
-        return ("data-delete", reason, "get the human's word for this exact action, then use the override")
+        return ("data-delete", reason, HUMAN_WORD_FIX)
     return None
 
 
 def check_sql_text(command: str) -> Optional[Refusal]:
     for pattern, label in DATA_DELETE_PATTERNS:
         if pattern.search(command):
-            return ("data-delete", f"the command carries {label}", "get the human's word for this exact action, then use the override")
+            return ("data-delete", f"the command carries {label}", HUMAN_WORD_FIX)
     for match in re.finditer(r"\bdelete\s+from\s+[A-Za-z_\"`.]+", command, re.IGNORECASE):
         statement = re.split(r"[;\"']", command[match.end():], maxsplit=1)[0]
         if not re.search(r"\bwhere\b", statement, re.IGNORECASE):
