@@ -15,6 +15,13 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         python: ["3.9", "3.13"]
+        exclude:
+          # ubuntu-latest moved to an image with no Python 3.9 build; that cell runs on 24.04 instead
+          - os: ubuntu-latest
+            python: "3.9"
+        include:
+          - os: ubuntu-24.04
+            python: "3.9"
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
