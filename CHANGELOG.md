@@ -2,6 +2,12 @@
 
 All notable changes to this kit. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). The current version is in [VERSION](./VERSION).
 
+## [Unreleased]
+
+### Fixed
+
+- `hooks/guard_bash.py`: an empty quoted argument (`""` or `''`) no longer splits a command in two before the checks read it, so `rm -rf "" ~`, `psql "" -c "DROP TABLE users"` and `git commit -m "" -n` are refused like the same commands without it.
+
 ## [1.2.0] - 2026-11-04
 
 ### Changed

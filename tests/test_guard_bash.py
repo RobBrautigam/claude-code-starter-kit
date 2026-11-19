@@ -245,6 +245,15 @@ class ReviewedBypasses(Base):
         self.assertIsNone(self.check('git commit -m"index fix"'))
         self.assertEqual(self.check("git commit -an -m wip"), "no-verify")
 
+    def test_an_empty_quoted_argument_does_not_split_a_command(self):
+        self.assertEqual(self.check('rm -rf "" ~'), "rm-root")
+        self.assertEqual(self.check("rm -rf '' /"), "rm-root")
+        self.assertEqual(self.check('psql "" -c "DROP TABLE users"'), "data-delete")
+        self.assertEqual(self.check('git commit -m "" -n'), "no-verify")
+        self.assertEqual(self.check('rm > "" -rf ~'), "rm-root")
+        self.assertEqual(self.check('> "" rm -rf ~'), "rm-root")  # an empty redirect target is still its target
+        self.assertIsNone(self.check('git commit --allow-empty-message -m ""'))
+
 
 if __name__ == "__main__":
     unittest.main()

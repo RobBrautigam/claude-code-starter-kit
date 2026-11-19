@@ -54,7 +54,7 @@ PROTECTED_BRANCHES = {"main", "master"}
 WRAPPERS = {"sudo", "env", "time", "nice", "nohup", "command", "builtin", "exec", "xargs", "timeout"}
 SHELLS_WITH_C = {"bash", "sh", "zsh", "dash"}
 POWERSHELLS = {"powershell", "powershell.exe", "pwsh", "pwsh.exe"}
-SEPARATOR_CHARS = frozenset(";&|()\n")  # a token made only of these separates commands: ; && || | & ( ) ;; |&
+SEPARATOR_CHARS = frozenset(";&|()\n")  # what a separator token is made of (is_separator)
 # The override prefix, in bash form (GUARD_OK="why" cmd) or PowerShell form ($env:GUARD_OK="why"; cmd).
 # It covers the one command (or pipeline) that follows it, never the rest of a chained line.
 OVERRIDE_RE = re.compile(
@@ -149,6 +149,12 @@ def is_redirect(token: str) -> bool:
     return bool(token) and set(token) <= set("<>&|") and ("<" in token or ">" in token)
 
 
+def is_separator(token: str) -> bool:
+    """; && || | & ( ) ;; |& or a newline. An empty quoted argument ("" or '') is a word, never a
+    separator: read as one, `rm -rf "" ~` would split before the checks see its target."""
+    return bool(token) and set(token) <= SEPARATOR_CHARS
+
+
 def drop_redirects(tokens: List[str]) -> List[str]:
     """Remove redirections (`> log`, `2>&1`, `< in.sql`) so their targets are never read as
     arguments; a file descriptor number written before the operator goes with it."""
@@ -157,7 +163,7 @@ def drop_redirects(tokens: List[str]) -> List[str]:
     for token in tokens:
         if skip_next:
             skip_next = False
-            if not (set(token) <= SEPARATOR_CHARS):
+            if not is_separator(token):
                 continue
         if is_redirect(token):
             if kept and kept[-1].isdigit():
@@ -175,7 +181,7 @@ def command_groups(command: str, depth: int = 0) -> List[List[List[str]]]:
     groups: List[List[List[str]]] = [[]]
     current: List[str] = []
     for token in drop_redirects(tokenize(command)):
-        if set(token) <= SEPARATOR_CHARS:
+        if is_separator(token):
             if current:
                 groups[-1].append(current)
             current = []
