@@ -3,12 +3,14 @@
 accidents before the Bash (or PowerShell) tool runs them.
 
     Register it in ~/.claude/settings.json (see hooks/README.md):
-        PreToolUse, matcher "Bash|PowerShell", command: python <path>/guard_bash.py
+        PreToolUse, matcher "Bash|PowerShell", command: "<python>" "<path>/guard_bash.py"
+        <python> is a Python's full path (scripts/install.py --with-hooks prints this command with
+        the Python that ran it): a bare `python` may not be on the PATH the hook runs under
 
 What it refuses (each refusal names the check, the reason and the fix):
 
-    no-verify        git commit / push / merge / rebase / cherry-pick / am with --no-verify
-                     (or `git commit -n`): a failed hook is fixed, never skipped
+    no-verify        git commit / push / merge / rebase / cherry-pick / am / revert with
+                     --no-verify (or `git commit -n`): a failed hook is fixed, never skipped
     force-push-main  git push --force / -f / --force-with-lease / a +refspec, aimed at main or
                      master (named, implied by the current branch, or --all / --mirror)
     reset-hard       git reset --hard: it throws away uncommitted work, possibly another
@@ -60,9 +62,10 @@ WRAPPERS = {"sudo", "env", "time", "nice", "nohup", "command", "builtin", "exec"
 SHELLS_WITH_C = {"bash", "sh", "zsh", "dash"}
 POWERSHELLS = {"powershell", "powershell.exe", "pwsh", "pwsh.exe"}
 SEPARATOR_CHARS = frozenset(";&|()\n")  # what a separator token is made of (is_separator)
-# A word made only of parameter expansions ($name, ${...}, $1 to $9, $@, $*): each can expand to
+# A word made only of parameter expansions ($name, ${...}, $1 to $9, $@, $*, $!): each can expand to
 # nothing, and bash drops an unquoted word that does (`$x rm -rf ~` runs `rm -rf ~` when x is empty).
-EXPANSION_RE = re.compile(r"^(?:\$(?:[A-Za-z_][A-Za-z0-9_]*|[1-9@*]|\{[^{}]+\}))+$")
+# $! is empty before the first background job, and ${!x} when the variable x names is unset.
+EXPANSION_RE = re.compile(r"^(?:\$(?:[A-Za-z_][A-Za-z0-9_]*|[1-9@*!]|\{[^{}]+\}))+$")
 # An @ expansion ("$@", "${arr[@]}") expands to no word at all when there is nothing to expand,
 # even inside double quotes; every other quoted word stays, empty or not.
 AT_EXPANSION_RE = re.compile(r"\$(?:@|\{[^{}]*@[^{}]*\})")
@@ -187,13 +190,20 @@ def tokenize(command: str) -> List[str]:
         lexer = shlex.shlex(source, posix=True, punctuation_chars=True)
         source.lexer = lexer
         lexer.whitespace = " \t"
-        lexer.wordchars += "~-./*$:\\=@%+,{}[]"
+        # ! too: inside a word, a shell that is not interactive reads it as a plain character, so
+        # `$!`, `${!x}` and `a!b` each stay one word, as bash reads them (a lone ! stays a word of
+        # its own, and a ! before a ( is read apart below)
+        lexer.wordchars += "~-./*$:\\=@%+,{}[]!"
         tokens: List[str] = []
         while True:
             source.states = set()
             token = lexer.get_token()
             if token == lexer.eof:
                 return tokens
+            if token.startswith("(") and len(tokens) > 0 and tokens[-1].endswith("!") and tokens[-1] != "!":
+                # !( starts an extglob pattern: with extglob on, `rm -rf ~/!(keep)` names every
+                # entry of ~/ but keep, so the word before the ! is read as the target
+                tokens[-1:] = [tokens[-1][:-1], "!"]
             tokens.append(MaybeEmpty(token) if may_vanish(token, source.states) else token)
     except ValueError:
         rough: List[str] = []

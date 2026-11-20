@@ -10,7 +10,9 @@ it matches. Nothing leaves the machine before a push, so this is the moment that
 
     Install (per repository, or through a git template folder for every new clone):
         .git/hooks/pre-push   ->  #!/bin/sh
-                                  exec python "<kit>/hooks/git/public_repo_guard.py" "$@"
+                                  exec "<python>" "<kit>/hooks/git/public_repo_guard.py" "$@"
+        <python> is a Python's full path: a bare `python` may not be on the PATH git runs the
+        hook under
 
     The denylist:   $PUBLIC_REPO_DENYLIST, else ~/.config/public-repo-guard/denylist.txt
                     one Python regular expression per line, matched case-insensitively;

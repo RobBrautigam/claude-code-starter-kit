@@ -319,5 +319,77 @@ class EmptyVariableBeforeTheCommand(Base):
         self.assertIsNone(self.check("$x rm -rf ./build"))
 
 
+class BangExpansionsBeforeTheCommand(Base):
+    """$! (the last background job's process id, empty before the first one) and ${!x} (the
+    variable that x names, empty when that one is unset) can expand to nothing too, and bash then
+    runs the words after them: `$! rm -rf ~` runs `rm -rf ~`."""
+
+    PREFIXES = ("$!", "${!x}")
+
+    def test_the_rest_is_checked_as_the_command(self):
+        for prefix in self.PREFIXES:
+            self.assertEqual(self.check(f"{prefix} rm -rf ~"), "rm-root", prefix)
+            self.assertEqual(self.check(f"{prefix} git reset --hard"), "reset-hard", prefix)
+
+    def test_every_check_reads_the_rest(self):
+        for prefix in self.PREFIXES:
+            self.assertEqual(self.check(f'{prefix} psql -c "DROP TABLE users"'), "data-delete", prefix)
+            self.assertEqual(self.check(f"{prefix} git push --force origin main"), "force-push-main", prefix)
+            self.assertEqual(self.check(f"{prefix} git commit --no-verify -m wip"), "no-verify", prefix)
+            self.assertEqual(self.check(f"{prefix} pkill node"), "kill-by-name", prefix)
+            self.assertEqual(self.check(f"{prefix} dropdb app"), "data-delete", prefix)
+
+    def test_other_bang_forms_and_runs_of_them(self):
+        for command in ("${!prefix*} rm -rf ~", "${!arr[@]} rm -rf ~", "$!$x rm -rf ~", "$x$! rm -rf ~",
+                        "$! ${!x} rm -rf ~"):
+            self.assertEqual(self.check(command), "rm-root", command)
+
+    def test_wrappers_chains_and_inner_scripts_around_it(self):
+        self.assertEqual(self.check("sudo $! rm -rf /"), "rm-root")
+        self.assertEqual(self.check("timeout 30 ${!x} git reset --hard"), "reset-hard")
+        self.assertEqual(self.check("npm test && $! git reset --hard"), "reset-hard")
+        self.assertEqual(self.check("bash -c '$! git reset --hard'"), "reset-hard")
+        self.assertEqual(self.check("bash -c '${!x} git reset --hard'"), "reset-hard")
+        self.assertEqual(self.check('bash -c "\\$! git reset --hard"'), "reset-hard")
+        self.assertEqual(self.check('$! rm -rf ~; echo "unclosed'), "rm-root")  # the rough split
+        self.assertEqual(self.check('${!x} rm -rf ~; echo "unclosed'), "rm-root")  # the rough split
+
+    def test_a_quoted_or_escaped_word_stays_the_program(self):
+        # bash keeps a quoted "$!" or "${!x}" as one word, even an empty one, and nothing after it runs
+        for prefix in self.PREFIXES:
+            self.assertIsNone(self.check(f'"{prefix}" rm -rf ~'), prefix)
+            self.assertIsNone(self.check(f"'{prefix}' rm -rf ~"), prefix)
+            self.assertIsNone(self.check(f"\\{prefix} rm -rf ~"), prefix)
+            self.assertIsNone(self.check(f'"{prefix}" rm -rf ~; echo "unclosed'), prefix)
+
+    def test_harmless_commands_stay_allowed(self):
+        self.assertIsNone(self.check("$! git status"))
+        self.assertIsNone(self.check("wait $!"))
+        self.assertIsNone(self.check("kill $!"))
+        self.assertIsNone(self.check('echo "${!x}"'))
+
+    def test_a_bang_inside_a_word_keeps_it_one_word(self):
+        # a shell that is not interactive hands the program `--hard!`, `main!` or `../o!ther` as one
+        # word, so the guard reads that word, never the parts on either side of the !
+        self.assertIsNone(self.check("git reset --hard!"))
+        self.assertIsNone(self.check("git push --force origin main!"))
+        self.assertEqual(self.check("git -C ../o!ther reset --hard"), "reset-hard")
+        self.assertEqual(self.check("rm -!rf ~"), "rm-root")
+        self.assertEqual(self.check("git commit -m fix! --no-verify"), "no-verify")
+        self.assertEqual(self.check("rm -rf ~ !"), "rm-root")
+
+    def test_an_extglob_bang_pattern_is_still_read_apart(self):
+        # with extglob on, `~/!(keep)` is every entry of the home folder but keep: the ! before a (
+        # is read apart, so the folder in front of it is the target
+        for command in ("rm -rf ~/!(keep)", "rm -rf ~/!(keep|other)", "rm -rf /!(boot)", "rm -rf $HOME/!(keep)",
+                        "rm -rf ${HOME}/!(keep)", "shopt -s extglob\nrm -rf ~/!(keep)",
+                        "bash -O extglob -c 'rm -rf ~/!(keep)'", "sudo rm -rf /!(proc|sys)"):
+            self.assertEqual(self.check(command), "rm-root", command)
+        self.assertIsNone(self.check("rm -rf ./build/!(keep)"))
+        # the word that ends in the ! is split there, and a lone ! is left as it is
+        self.assertEqual(guard_bash.tokenize("rm -rf ~/!(keep)"), ["rm", "-rf", "~/", "!", "(", "keep", ")"])
+        self.assertEqual(guard_bash.tokenize("!(git status)"), ["!", "(", "git", "status", ")"])
+
+
 if __name__ == "__main__":
     unittest.main()
