@@ -26,7 +26,7 @@ How the pieces of this kit fit together, and how a session flows through them. I
 └─────────────────────────────────────────────────────────────┘
 ```
 
-Three things make this work as a system rather than a pile of files:
+Four things make this work as a system rather than a pile of files:
 
 1. **Rules are always on; skills are on-demand.** A rule shapes behavior whether or not you remember it exists (how commits are written, how parallel sessions stay safe, how questions are framed). A skill is a workflow that only runs when its `description` trigger phrases appear. This split is deliberate: discipline you can't forget to apply, workflows you invoke when you need them.
 
@@ -51,7 +51,7 @@ Three things make this work as a system rather than a pile of files:
 ## A session, end to end
 
 1. **Morning** - "morning check" fires `daily-review`, which surfaces today's work without re-planning the week.
-2. **Start a project** - "let's work on X" fires `project-manager`. It reconciles the starter prompt against the canonical scope (catching drift), opens a feature branch + draft PR, then runs Superpowers `brainstorming` → `writing-plans`.
+2. **Start a project** - "let's work on X" fires `project-manager`. It reconciles the starter prompt against the canonical scope (catching drift), opens a feature branch, runs Superpowers `brainstorming` → `writing-plans`, and opens a draft PR once the design spec is committed.
 3. **Build** - `subagent-driven-development` (or inline execution) implements the plan task by task, each with TDD and a review pass. On a large repo, `explore-codebase` / `debug-issue` / `refactor-safely` answer structural questions via the code graph instead of blind greps.
 4. **Review** - `review-changes` scores the diff by blast radius and test coverage; pair it with an adversarial pass on risky surfaces.
 5. **Close** - "ship it" fires `ship`: version bump, progress log, report, commit, push, PR merge, and a live-URL verification before declaring done. `session-loose-ends-audit` ensures no idea raised mid-session is silently dropped.
@@ -64,6 +64,7 @@ claude-code-starter-kit
 ├── requires:  Claude Code (or any agentic CLI honoring markdown skills/rules)
 ├── requires:  Superpowers (Obra)            ← the workflow engine the skills call
 ├── requires:  Python 3.9+                   ← the installer, the hooks, the tests (stdlib only)
+├── requires:  Git                           ← the clone, the git hooks, the setup doctor
 ├── optional:  Perplexity API key            ← the `research` skill's paid fallback
 ├── optional:  GitHub CLI (gh)               ← `ship`, `project-manager` PR ops
 ├── optional:  code-review-graph MCP         ← the four code-graph skills
@@ -77,4 +78,4 @@ Everything optional fails soft: the dependent skill degrades or sits idle, and t
 - **Mechanical gates over prose.** Where a rule can be enforced by a CI grep, a lint check or a hook, build the gate - documentation alone doesn't change behavior (see `rules/sharp-edges-convention.md` and `hooks/`).
 - **One decision made once.** Branch-by-default, single-file test iteration, push-to-CI - each is a default set once in a rule instead of re-negotiated every session.
 - **Fail toward pausing.** Scope anomalies, ambiguous destructive actions, and precondition violations interrupt even "full autopilot" (see `rules/autopilot-and-scope-checks.md`).
-- **Nothing is canonical.** Every file is standalone markdown. Pluck one rule, edit any skill, ignore the rest. The kit is a starting point, not a contract.
+- **Nothing is canonical.** Every rule and every `SKILL.md` is plain markdown, and most stand alone. Pluck one rule, edit any skill, ignore the rest. The kit is a starting point, not a contract.

@@ -19,19 +19,23 @@ or obfuscated command can get past them. Their job is the honest mistake at 2 a.
 
 | Check | Refused | The fix it prints |
 |---|---|---|
-| `no-verify` | `git commit`, `push`, `merge`, `rebase`, `cherry-pick` or `am` with `--no-verify`, and `git commit -n` | fix what the hook found and run the command again |
+| `no-verify` | `git commit`, `push`, `merge`, `rebase`, `cherry-pick`, `am` or `revert` with `--no-verify`, and `git commit -n` | fix what the hook found and run the command again |
 | `force-push-main` | `git push --force`, `-f`, `--force-with-lease`, `--force-if-includes` or a `+refspec` aimed at `main` or `master`: named, implied by the branch you are on, or through `--all`, `--branches` or `--mirror` | pull with rebase and push normally; change history on a branch, through a pull request |
 | `reset-hard` | `git reset --hard` anywhere | commit the work first (a WIP commit is fine), or `git restore` the one file |
 | `kill-by-name` | `taskkill /IM`, `pkill`, `killall`, `Stop-Process -Name`, `kill -Name`, and `Get-Process <name>` piped into `Stop-Process` in any pipeline of the line | find the process id, check it, and stop that id only |
-| `data-delete` | `dropdb`, `gh repo delete`, `supabase projects delete`, `supabase db reset --linked`, and `DROP TABLE`, `DROP DATABASE`, `DROP SCHEMA`, `TRUNCATE` or a `DELETE FROM` with no `WHERE` given to an SQL client (as its argument, piped into it, or in a heredoc fed to it; a file fed with `< file.sql` is not opened) | get the human's word for this exact action, then use the override below |
+| `data-delete` | `dropdb`, `gh repo delete`, `supabase projects delete`, `supabase db reset --linked`, and `DROP TABLE`, `DROP DATABASE`, `DROP SCHEMA`, `TRUNCATE` or a `DELETE FROM` with no `WHERE` given to an SQL client (as its argument, piped into it, or in a heredoc fed to it; a file fed with `< file.sql` is not opened) | get the human's word for this exact action, then use the override below (for a `DELETE FROM` with no `WHERE`: add the `WHERE` clause you mean) |
 | `rm-root` | `rm -r` aimed at `/`, `/*`, `~`, `$HOME` or `${HOME}`, with or without `/*` | name the exact folder |
 | `heredoc-backslash` | a heredoc whose body holds a backslash under an unquoted delimiter, or two backslashes in a row under any delimiter | write the file with the Write tool, then run it (see `rules/no-bash-heredocs.md`) |
 
 It also reads inside `bash -c "..."` (and flag clusters such as `bash -lc`), `sh -c`,
 `powershell -Command "..."` and common wrappers (`sudo -u <user>`, `env`, `time`, `timeout 30`,
-`nohup`, `xargs`), so wrapping a command does not hide it. Redirections such as `2>&1` or
-`> push.log` are dropped before a command is read, and a line it cannot tokenize is still
-split and checked rather than allowed.
+`nohup`, `xargs`), so wrapping a command does not hide it. Nor does an empty variable of the
+usual forms in front of it: a program word made only of unquoted `$x`, `${x}`, `$1` to `$9`,
+`$@` or `$*` expansions can expand to nothing, and bash then runs the words after it, so the
+line is read both with and without that word (`$x rm -rf ~` is refused like `rm -rf ~`; a quoted
+`"$@"` is read the same way, since it can also expand to no word). Redirections such as `2>&1` or `> push.log` are
+dropped before a command is read, and a line it cannot tokenize is still split and checked
+rather than allowed.
 
 ### How a refusal looks
 
@@ -41,7 +45,7 @@ shows Claude the message, which names the check, why, and the fix:
 ```
 BLOCKED by guard_bash (reset-hard): git reset --hard throws away uncommitted work, and another session may be working in this folder.
 Fix: commit the work first (a WIP commit is fine), or use git restore on the one file you mean.
-Override (only when the human asked for this exact action): start the command with GUARD_OK="<their reason>".
+Override (only when the human asked for this exact action): start that one command with GUARD_OK="<their reason>" (in PowerShell: $env:GUARD_OK="<their reason>"; ).
 ```
 
 | Exit code | Meaning |
@@ -74,7 +78,7 @@ override covers the one command (or pipeline) right after it; anything chained a
    ```
 
 2. Merge the printed block into `~/.claude/settings.json` (the installer never edits that file).
-   It looks like this, with your own path:
+   It looks like this, with your own Python's full path and your own hook path:
 
    ```json
    {
@@ -83,7 +87,7 @@ override covers the one command (or pipeline) right after it; anything chained a
          {
            "matcher": "Bash|PowerShell",
            "hooks": [
-             { "type": "command", "command": "python \"/home/you/.claude/hooks/guard_bash.py\"" }
+             { "type": "command", "command": "\"/usr/bin/python3\" \"/home/you/.claude/hooks/guard_bash.py\"" }
            ]
          }
        ]

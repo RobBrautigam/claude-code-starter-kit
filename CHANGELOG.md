@@ -7,6 +7,7 @@ All notable changes to this kit. The format follows [Keep a Changelog](https://k
 ### Fixed
 
 - `hooks/guard_bash.py`: an empty quoted argument (`""` or `''`) no longer splits a command in two before the checks read it, so `rm -rf "" ~`, `psql "" -c "DROP TABLE users"` and `git commit -m "" -n` are refused like the same commands without it.
+- `hooks/guard_bash.py`: an empty variable (`$x`, `${x}`, `$1` to `$9`, `$@`, `$*`) before a command no longer hides it. A program word made only of those unquoted expansions, or a quoted `"$@"`, can expand to no word at all, and bash then runs the words after it, so the line is now read both with and without that word: `$x rm -rf ~` is refused like `rm -rf ~`.
 
 ## [1.2.0] - 2026-11-04
 
