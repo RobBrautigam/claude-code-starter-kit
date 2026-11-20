@@ -319,5 +319,55 @@ class EmptyVariableBeforeTheCommand(Base):
         self.assertIsNone(self.check("$x rm -rf ./build"))
 
 
+class BangExpansionsBeforeTheCommand(Base):
+    """$! (the last background job's process id, empty before the first one) and ${!x} (the
+    variable that x names, empty when that one is unset) can expand to nothing too, and bash then
+    runs the words after them: `$! rm -rf ~` runs `rm -rf ~`."""
+
+    PREFIXES = ("$!", "${!x}")
+
+    def test_the_rest_is_checked_as_the_command(self):
+        for prefix in self.PREFIXES:
+            self.assertEqual(self.check(f"{prefix} rm -rf ~"), "rm-root", prefix)
+            self.assertEqual(self.check(f"{prefix} git reset --hard"), "reset-hard", prefix)
+
+    def test_every_check_reads_the_rest(self):
+        for prefix in self.PREFIXES:
+            self.assertEqual(self.check(f'{prefix} psql -c "DROP TABLE users"'), "data-delete", prefix)
+            self.assertEqual(self.check(f"{prefix} git push --force origin main"), "force-push-main", prefix)
+            self.assertEqual(self.check(f"{prefix} git commit --no-verify -m wip"), "no-verify", prefix)
+            self.assertEqual(self.check(f"{prefix} pkill node"), "kill-by-name", prefix)
+            self.assertEqual(self.check(f"{prefix} dropdb app"), "data-delete", prefix)
+
+    def test_other_bang_forms_and_runs_of_them(self):
+        for command in ("${!prefix*} rm -rf ~", "${!arr[@]} rm -rf ~", "$!$x rm -rf ~", "$x$! rm -rf ~",
+                        "$! ${!x} rm -rf ~"):
+            self.assertEqual(self.check(command), "rm-root", command)
+
+    def test_wrappers_chains_and_inner_scripts_around_it(self):
+        self.assertEqual(self.check("sudo $! rm -rf /"), "rm-root")
+        self.assertEqual(self.check("timeout 30 ${!x} git reset --hard"), "reset-hard")
+        self.assertEqual(self.check("npm test && $! git reset --hard"), "reset-hard")
+        self.assertEqual(self.check("bash -c '$! git reset --hard'"), "reset-hard")
+        self.assertEqual(self.check("bash -c '${!x} git reset --hard'"), "reset-hard")
+        self.assertEqual(self.check('bash -c "\\$! git reset --hard"'), "reset-hard")
+        self.assertEqual(self.check('$! rm -rf ~; echo "unclosed'), "rm-root")  # the rough split
+        self.assertEqual(self.check('${!x} rm -rf ~; echo "unclosed'), "rm-root")  # the rough split
+
+    def test_a_quoted_or_escaped_word_stays_the_program(self):
+        # bash keeps a quoted "$!" or "${!x}" as one word, even an empty one, and nothing after it runs
+        for prefix in self.PREFIXES:
+            self.assertIsNone(self.check(f'"{prefix}" rm -rf ~'), prefix)
+            self.assertIsNone(self.check(f"'{prefix}' rm -rf ~"), prefix)
+            self.assertIsNone(self.check(f"\\{prefix} rm -rf ~"), prefix)
+            self.assertIsNone(self.check(f'"{prefix}" rm -rf ~; echo "unclosed'), prefix)
+
+    def test_harmless_commands_stay_allowed(self):
+        self.assertIsNone(self.check("$! git status"))
+        self.assertIsNone(self.check("wait $!"))
+        self.assertIsNone(self.check("kill $!"))
+        self.assertIsNone(self.check('echo "${!x}"'))
+
+
 if __name__ == "__main__":
     unittest.main()
