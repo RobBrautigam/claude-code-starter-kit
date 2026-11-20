@@ -111,9 +111,9 @@ Anyone running Claude Code as their daily development environment, especially pe
 
 There are three ways to adopt this kit. The cleanest is to install everything globally as a baseline: drop the rules into `~/.claude/rules/`, the skills into `~/.claude/skills/`, point your `~/.claude/CLAUDE.md` at the template, and let every Claude Code session inherit the full discipline layer. If you trust the defaults, this is the highest-leverage move and takes about ten minutes.
 
-The second pattern is rules globally, skills selectively. Rules auto-load into every conversation and shape behavior whether you remember them or not (how Claude commits, how it handles parallel sessions, how it asks questions during brainstorming, how it ends sessions). Skills only fire when their trigger phrases come up. Installing seven skills costs nothing if you only end up triggering two of them.
+The second pattern is rules globally, skills selectively. Rules auto-load into every conversation and shape behavior whether you remember them or not (how Claude commits, how it handles parallel sessions, how it asks questions during brainstorming, how it ends sessions). Skills only fire when their trigger phrases come up. Installing every skill costs nothing if you only end up triggering two of them.
 
-The third pattern is pluck what you want. Every file is standalone. Steal a single rule, a single skill, or a single section of the `CLAUDE.md` template into your own config. Nothing here depends on anything else.
+The third pattern is pluck what you want. Most files stand alone: steal a single rule, a single skill, or a single section of the `CLAUDE.md` template into your own config. Where one names another (`project-manager` calls `project-scaffolder` and `ship`; the four code-graph skills point to the `code-review-graph-usage` rule), take them together.
 
 If you want to start small, the highest-leverage starter set is five files: [`communication-style.md`](./rules/communication-style.md) (kills the corporate filler that makes Claude responses three times longer than they need to be), [`git-conventions.md`](./rules/git-conventions.md) (consistent commits, branches, identity safety), [`concurrent-sessions.md`](./rules/concurrent-sessions.md) (the single biggest source of cross-session corruption is two Claude conversations sharing one working tree, and this rule prevents it), the [`session-handoff`](./skills/session-handoff/) skill (so context survives `/clear`), and [`session-types.md`](./rules/session-types.md) (so Claude knows whether you're fixing a bug, building a feature, or thinking out loud, and adapts accordingly). Five files, immediate compounding returns. Add the rest as the patterns they describe start showing up in your own work.
 
@@ -127,7 +127,7 @@ Skills only fire when their trigger phrases appear in a conversation. You can in
 
 **Diagnoses and fixes a messy Claude Code setup across the entire computer - Windows or Mac: finds every scattered git repo, migrates them into one flat dev root (only after you approve the plan), and equips each with a `CLAUDE.md` + `.claude/` folder.**
 
-Months of real use accrete repos on the Desktop, in Documents, and wherever an editor happened to clone them - often silently syncing to iCloud/OneDrive, which is the single most common silent corruptor of a dev machine. The doctor runs five phases: global snapshot, read-only inventory (one table, every repo, flagged), migration plan (STOPS for approval; archives duplicates instead of deleting), git-safe moves (clean + pushed verified before, status + fetch + worktree-repair verified after), then the equip pass (a drafted `CLAUDE.md` per repo from actually reading it, `.claude/rules/`, gitignore hygiene). The zero-install prompt version lives in [ORGANIZE-YOUR-COMPUTER.md](./ORGANIZE-YOUR-COMPUTER.md).
+Months of real use accrete repos on the Desktop, in Documents, and wherever an editor happened to clone them - often silently syncing to iCloud/OneDrive, which is the single most common silent corruptor of a dev machine. The doctor runs six phases: global snapshot, read-only inventory (one table, every repo, flagged), migration plan (STOPS for approval; archives duplicates instead of deleting), git-safe moves (clean + pushed verified before, status + fetch + worktree-repair verified after), the equip pass (a drafted `CLAUDE.md` per repo from actually reading it, `.claude/rules/`, gitignore hygiene), then a verify pass that ends in one table of every repo. The zero-install prompt version lives in [ORGANIZE-YOUR-COMPUTER.md](./ORGANIZE-YOUR-COMPUTER.md).
 
 - **When to use:** "organize my repos", "my folders are a mess", "set up my computer for Claude Code", first install on a machine with history, or any time scatter creeps back.
 
@@ -144,7 +144,7 @@ The README a one-liner produces is useless six months later - the rich-context R
 
 **Enforces a feature-branch + draft-PR + Superpowers-chain workflow at session start, with a scope reconciliation step that catches starter-prompt drift before you write code.**
 
-Starter prompts go stale. You paste one into a fresh session, the model takes it at face value, and three hours later you discover the prompt silently dropped two of the four pages the project was supposed to ship, because the canonical scope lived in the README and a sibling project's dependency list. This skill makes scope reconciliation a hard step before brainstorming, so the divergence surfaces as a delta table instead of as a missed deliverable. It also gets the branch and draft PR opened immediately, which means parallel work is visible in Slack/GitHub from minute one rather than after the first push two hours in.
+Starter prompts go stale. You paste one into a fresh session, the model takes it at face value, and three hours later you discover the prompt silently dropped two of the four pages the project was supposed to ship, because the canonical scope lived in the README and a sibling project's dependency list. This skill makes scope reconciliation a hard step before brainstorming, so the divergence surfaces as a delta table instead of as a missed deliverable. It also opens the branch before any design work and a draft PR as soon as the design spec is committed, so parallel work shows in Slack/GitHub at the first push.
 
 - **When to use:** Triggers on "let's work on X", "next project", "continue X", "what's next", or any paste of a starter prompt naming a project. Activates at the moment a multi-step build is about to begin, before any brainstorming or code. If a saved plan exists at `projects/<slug>/plan.md`, it resumes; otherwise it forces a brainstorm pass.
 - **When not to use:** Skip for one-sentence bug fixes (branch, fix, push, ship is faster), strategy conversations with no implementation, and pure exploratory questions. You also do not need this if your projects are small enough that scope drift between sessions is not a real failure mode for you.
@@ -153,7 +153,7 @@ Starter prompts go stale. You paste one into a fresh session, the model takes it
 
 **A session-close checklist that handles version bump, progress log, patch or release report, README updates, commit, push, and PR merge in one orchestrated pass.**
 
-Most sessions end with half the closing work done. The version got bumped but the progress log didn't, or the PR merged but the README still shows unchecked boxes, or the deploy "succeeded" but nobody hit the live URL to confirm the new affordance actually renders. Ship runs the same seven steps every time, in parallel where it can, and refuses to declare done until the change is verified live in production (not just merged). It also forces a preflight review checkpoint, which catches the kind of bug you'd otherwise discover in the next session when you're already three steps into something else.
+Most sessions end with half the closing work done. The version got bumped but the progress log didn't, or the PR merged but the README still shows unchecked boxes, or the deploy "succeeded" but nobody hit the live URL to confirm the new affordance actually renders. Ship runs the same seven steps every time, in parallel where it can, and refuses to declare done until the change is verified live in production (not just merged). It also opens with an optional review checkpoint: when you have a code-review tool, it offers a second-opinion review before anything ships, which catches the kind of bug you'd otherwise discover in the next session when you're already three steps into something else.
 
 - **When to use:** Triggers on `/ship`, "let's close out", "ship it", "wrap up this session", "done", or "that's it for today". Activates at the natural end of any session that produced code changes, after the work is committed but before you context-switch to something else.
 - **When not to use:** Skip for pure research or planning sessions that produced no code, and for sessions whose only output is a plan file. You also don't need this if you genuinely enjoy hand-rolling release notes at 11pm.
@@ -182,7 +182,7 @@ Most days start with the same failure mode: you open Claude Code, ask "what shou
 
 Most project trackers rot in the same way: things drift into "in progress", sit there for three weeks, and quietly poison your trust in the system. This skill forces a weekly reconciliation. You audit anything stale, promote backlog items that actually deserve attention, and commit to a dated week plan instead of vibes-based prioritization. The result: when you look at your todo list on Tuesday, you believe it.
 
-- **When to use:** Run it at the start of the week, or when you say "weekly review", "plan my week", "what should I work on this week", or `/weekly-review`. Also useful when your in-progress list has more than three items and you suspect half of them are zombies.
+- **When to use:** Run it at the start of the week, or when you say "weekly review", "plan my week", "review my projects", or `/weekly-review`. Also useful when your in-progress list has more than three items and you suspect half of them are zombies.
 - **When not to use:** Skip it if you do not have a project pipeline with status fields (todo, in_progress, backlog, done) and target dates. Skip it for daily check-ins; that is what `daily-review` is for.
 
 ### [`skill-creator`](./skills/skill-creator/)
@@ -384,7 +384,7 @@ claude-code-starter-kit/
 ## Required dependencies
 
 - **[Claude Code](https://claude.com/claude-code)** - the CLI / VS Code extension this is built for. The kit also works inside any agentic CLI that respects markdown skills and rules (Codex, etc.).
-- **[Superpowers](https://github.com/obra/superpowers)** by Obra - **install this first.** Provides the `superpowers:brainstorming`, `superpowers:writing-plans`, `superpowers:subagent-driven-development`, and related skills that `project-manager` and `ship` invoke. Without Superpowers, the workflow chain degrades gracefully (Claude will narrate the steps) but you lose most of the value.
+- **[Superpowers](https://github.com/obra/superpowers)** by Obra - **install this first.** Provides the `superpowers:brainstorming`, `superpowers:writing-plans`, `superpowers:subagent-driven-development`, and related skills that `project-manager` invokes (`project-scaffolder` and three of the four code-graph skills name some too). Without Superpowers, the workflow chain degrades gracefully (Claude will narrate the steps) but you lose most of the value.
 
 Optional:
 
@@ -392,7 +392,7 @@ Optional:
 - **[Perplexity API key](https://www.perplexity.ai/settings/api)** - optional, for the `research` skill's paid fallback when the free sources come back thin. Add to `~/.claude/.secrets.env` as `PERPLEXITY_API_KEY=...` or export it.
 - **[GitHub CLI](https://cli.github.com/)** - used by `ship` and `project-manager` for PR creation, status checks, and merges. `gh auth login` once.
 - **[`code-review-graph`](https://pypi.org/project/code-review-graph/)** - the MCP knowledge-graph server behind the four code-graph skills (`explore-codebase`, `debug-issue`, `refactor-safely`, `review-changes`). Runs via `uvx code-review-graph serve`; register it at user scope in `~/.claude.json` so it's available in every repo. Without it those four skills have nothing to drive; the rest of the kit is unaffected.
-- **Codex plugin** (optional) - `review-changes` and `scaffold-repo` reference `/codex:review` / `/codex:adversarial-review` for an independent adversarial review pass. If you don't use Codex, treat those as "run a deeper review" prompts - nothing breaks.
+- **Codex plugin** (optional) - `review-changes` references `/codex:review` / `/codex:adversarial-review` for an independent adversarial review pass. If you don't use Codex, treat those as "run a deeper review" prompts - nothing breaks.
 
 ---
 

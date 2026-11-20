@@ -138,7 +138,7 @@ Many of these skills reference `superpowers:brainstorming`, `superpowers:writing
 
 Install: https://github.com/obra/superpowers
 
-Until Superpowers is installed, the `project-manager` and `ship` skills will reference skills that don't exist yet - the workflow degrades gracefully (Claude will narrate the steps instead of invoking the skill) but the full value comes from having Superpowers installed.
+Until Superpowers is installed, the `project-manager` skill (and the others that name a Superpowers skill) will reference skills that don't exist yet - the workflow degrades gracefully (Claude will narrate the steps instead of invoking the skill) but the full value comes from having Superpowers installed.
 
 ### Python 3.9 or newer
 
@@ -184,7 +184,7 @@ It's lazy - the process idles until you build a graph (`uvx code-review-graph bu
 
 ### Codex plugin (optional)
 
-`review-changes` and `scaffold-repo` reference `/codex:review` / `/codex:adversarial-review` for an independent adversarial review pass. If you don't use Codex, read those as "run a deeper review here" prompts - nothing breaks without it.
+`review-changes` references `/codex:review` / `/codex:adversarial-review` for an independent adversarial review pass. If you don't use Codex, read those as "run a deeper review here" prompts - nothing breaks without it.
 
 ---
 

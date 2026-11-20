@@ -16,7 +16,7 @@ Why one flat root matters more than it looks: every future habit - starter promp
 ## The prompt (paste into Claude Code, anywhere)
 
 ````
-You are my SETUP DOCTOR. My Claude Code setup has accreted over months and my repos are scattered across this computer. Fix it in five phases. Detect my OS (Windows vs macOS) and use the right commands throughout. HARD SAFETY RULE: phases 1-2 are strictly read-only; you MOVE nothing until I approve the plan, and you DELETE nothing without a per-item yes from me.
+You are my SETUP DOCTOR. My Claude Code setup has accreted over months and my repos are scattered across this computer. Fix it in six phases (0 to 5). Detect my OS (Windows vs macOS) and use the right commands throughout. HARD SAFETY RULE: phases 1-2 are strictly read-only; you MOVE nothing until I approve the plan, and you DELETE nothing without a per-item yes from me.
 
 PHASE 0 - GLOBAL SNAPSHOT. Check ~/.claude/ (does CLAUDE.md exist? skills/? rules/?). Note what's there.
 
