@@ -275,6 +275,7 @@ class EmptyVariableBeforeTheCommand(Base):
         self.assertEqual(self.check("$x sudo rm -rf /"), "rm-root")
         self.assertEqual(self.check("timeout 30 $x git reset --hard"), "reset-hard")
         self.assertEqual(self.check("npm test && $x git reset --hard"), "reset-hard")
+        self.assertEqual(self.check('echo "a quoted word first" && $x rm -rf ~'), "rm-root")
         self.assertEqual(self.check("bash -c '$x git reset --hard'"), "reset-hard")
         self.assertEqual(self.check("$x bash -c 'git reset --hard'"), "reset-hard")
         self.assertEqual(self.check('$x rm -rf ~; echo "unclosed'), "rm-root")  # the rough split

@@ -33,9 +33,11 @@ together, drops redirections (2>&1, > file), skips wrapper flags and their value
 bob, timeout 30), and reads the script inside bash -c / -lc / -ec, sh -c and powershell
 -Command. A program word made only of unquoted variable expansions ($x, ${x}, $1, $@) can
 expand to nothing, and bash then runs the words after it, so the command is read both ways
-(`$x rm -rf ~` is refused; the quoted `"$x" rm -rf ~` runs a program named "" and is not).
-A line it cannot tokenize is split roughly and still checked, never waved through. SQL is read from a client's own arguments, a pipe into it and a heredoc fed to
-it; a file fed with `< wipe.sql` is not opened.
+(`$x rm -rf ~` is refused; the quoted `"$x" rm -rf ~` runs a program named "" and is not,
+but a quoted "$@" or "${arr[@]}" can vanish too and is read the same way). A name glued to
+an expansion (${x}rm) is not read apart. A line it cannot tokenize is split roughly and
+still checked, never waved through. SQL is read from a client's own arguments, a pipe into
+it and a heredoc fed to it; a file fed with `< wipe.sql` is not opened.
 A refusal is the hook exiting 2 with the reason on stderr, which Claude Code shows to Claude.
 
 This is pattern matching on the command text to stop accidents. It is not a security boundary:
@@ -61,6 +63,9 @@ SEPARATOR_CHARS = frozenset(";&|()\n")  # what a separator token is made of (is_
 # A word made only of parameter expansions ($name, ${...}, $1 to $9, $@, $*): each can expand to
 # nothing, and bash drops an unquoted word that does (`$x rm -rf ~` runs `rm -rf ~` when x is empty).
 EXPANSION_RE = re.compile(r"^(?:\$(?:[A-Za-z_][A-Za-z0-9_]*|[1-9@*]|\{[^{}]+\}))+$")
+# An @ expansion ("$@", "${arr[@]}") expands to no word at all when there is nothing to expand,
+# even inside double quotes; every other quoted word stays, empty or not.
+AT_EXPANSION_RE = re.compile(r"\$(?:@|\{[^{}]*@[^{}]*\})")
 # The override prefix, in bash form (GUARD_OK="why" cmd) or PowerShell form ($env:GUARD_OK="why"; cmd).
 # It covers the one command (or pipeline) that follows it, never the rest of a chained line.
 OVERRIDE_RE = re.compile(
@@ -139,29 +144,43 @@ def check_heredocs(bodies: Iterable[Tuple[str, bool, str]]) -> Optional[Refusal]
 
 
 class MaybeEmpty(str):
-    """A word made only of unquoted parameter expansions (EXPANSION_RE). It compares and reads
-    like any other word; readings() also reads the command without it, as bash runs it then."""
+    """A word bash can drop: made only of parameter expansions (EXPANSION_RE), unquoted or a
+    double-quoted @ expansion (may_vanish). It compares and reads like any other word;
+    readings() also reads the command without it, as bash runs it then."""
+
+
+def may_vanish(word: str, quoted_in: Iterable[str]) -> bool:
+    """True when bash can drop `word`: made only of parameter expansions, and either read with no
+    quoting at all, or only inside double quotes and holding an @ expansion. `quoted_in` is the
+    set of lexer states its characters were read in ('"', "'", or the backslash)."""
+    if not EXPANSION_RE.match(word):
+        return False
+    states = set(quoted_in)
+    return not states or (states == {'"'} and bool(AT_EXPANSION_RE.search(word)))
 
 
 class _Source(io.StringIO):
-    """The text shlex reads, one character at a time. It notes when a character is read inside
-    quotes or right after a backslash, so tokenize can tell `$x` from `"$x"`, `'$x'` and `\\$x`,
-    which shlex hands back as the same word."""
+    """The text shlex reads, one character at a time. It notes the quote states its characters are
+    read in (inside '...' or "...", or right after a backslash), so tokenize can tell `$x` from
+    `"$x"`, `'$x'` and `\\$x`, which shlex hands back as the same word."""
 
-    lexer: Optional[shlex.shlex] = None
-    quoted = False
+    def __init__(self, text: str):
+        super().__init__(text)
+        self.lexer: Optional[shlex.shlex] = None
+        self.states: set = set()
 
     def read(self, size: int = -1) -> str:
         chunk = super().read(size)
-        if chunk and getattr(self.lexer, "state", None) not in (None, " ", "a", "c"):
-            self.quoted = True  # the lexer is inside '...' or "...", or escaping this character
+        state = getattr(self.lexer, "state", None)
+        if chunk and state not in (None, " ", "a", "c"):
+            self.states.add(state)  # the lexer is inside '...' or "...", or escaping this character
         return chunk
 
 
 def tokenize(command: str) -> List[str]:
-    """Shell words and operators; a word made only of unquoted variable expansions comes back as
-    a MaybeEmpty. A command shlex cannot read (an unbalanced quote, a PowerShell backtick escape)
-    falls back to a rough split, so the checks still run: never fail open."""
+    """Shell words and operators; a word bash can drop (may_vanish) comes back as a MaybeEmpty.
+    A command shlex cannot read (an unbalanced quote, a PowerShell backtick escape) falls back to
+    a rough split, so the checks still run: never fail open."""
     text = command.replace("\r", "")
     try:
         source = _Source(text)
@@ -171,14 +190,18 @@ def tokenize(command: str) -> List[str]:
         lexer.wordchars += "~-./*$:\\=@%+,{}[]"
         tokens: List[str] = []
         while True:
-            source.quoted = False
+            source.states = set()
             token = lexer.get_token()
             if token == lexer.eof:
                 return tokens
-            tokens.append(MaybeEmpty(token) if not source.quoted and EXPANSION_RE.match(token) else token)
+            tokens.append(MaybeEmpty(token) if may_vanish(token, source.states) else token)
     except ValueError:
-        words = re.findall(r"[;&|()<>\n]+|[^\s;&|()<>]+", text)
-        return [MaybeEmpty(t) if EXPANSION_RE.match(t) else t.strip("\"'`") for t in words]
+        rough: List[str] = []
+        for word in re.findall(r"[;&|()<>\n]+|[^\s;&|()<>]+", text):
+            double = len(word) > 1 and word[0] == word[-1] == '"'
+            inner = word[1:-1] if double else word
+            rough.append(MaybeEmpty(inner) if may_vanish(inner, '"' if double else "") else word.strip("\"'`"))
+        return rough
 
 
 def is_redirect(token: str) -> bool:
@@ -235,7 +258,9 @@ def command_groups(command: str, depth: int = 0) -> List[List[List[str]]]:
                 expanded.append(reading)
                 inner = inner_script(reading)
                 if inner is not None and depth < 3:
-                    for inner_group in command_groups(inner, depth + 1):
+                    # bash drops the backslash of \$ inside double quotes and shlex keeps it, so
+                    # `bash -c "\$x git reset --hard"` hands the inner shell an unescaped $x
+                    for inner_group in command_groups(inner.replace("\\$", "$"), depth + 1):
                         expanded.extend(inner_group)
         if expanded:
             result.append(expanded)
