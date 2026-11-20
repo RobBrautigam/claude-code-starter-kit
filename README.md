@@ -10,7 +10,7 @@ You get 14 skills (`setup-doctor`, `project-scaffolder`, `project-manager`, `shi
 
 ## Quick start (from a clean clone)
 
-You need Git to clone the kit, and Python 3.9 or newer to run the installer below (standard library only; nothing to `pip install`). No Python? [Let your agent install it](#or-let-your-agent-install-it) instead: it copies the skills, the rules and the `CLAUDE.md` template with plain file copies, and installs no hooks.
+You need Git to clone the kit, and Python 3.9 or newer to run the installer below (standard library only; nothing to `pip install`). No Python? [Let your agent install it](#or-let-your-agent-install-it) instead: it copies the skills and the rules (and the `CLAUDE.md` template when you have none) with plain file copies, and installs no hooks.
 
 ```bash
 git clone https://github.com/RobBrautigam/claude-code-starter-kit.git
@@ -388,7 +388,7 @@ claude-code-starter-kit/
 
 Optional:
 
-- **Python 3.9 or newer** - for the installer, the tests and the two Python hooks (the command guard and the pre-push guard); the agent install copies the files without it, and the `commit-msg` hook is POSIX sh. Standard library only; nothing to `pip install`.
+- **Python 3.9 or newer** - for the installer, the tests, the two Python hooks (the command guard and the pre-push guard) and the `research` skill's paid script; [the agent install](#or-let-your-agent-install-it) copies the files without it, and the `commit-msg` hook is POSIX sh. Standard library only; nothing to `pip install`.
 - **[Perplexity API key](https://www.perplexity.ai/settings/api)** - optional, for the `research` skill's paid fallback when the free sources come back thin. Add to `~/.claude/.secrets.env` as `PERPLEXITY_API_KEY=...` or export it.
 - **[GitHub CLI](https://cli.github.com/)** - used by `ship` and `project-manager` for PR creation, status checks, and merges. `gh auth login` once.
 - **[`code-review-graph`](https://pypi.org/project/code-review-graph/)** - the MCP knowledge-graph server behind the four code-graph skills (`explore-codebase`, `debug-issue`, `refactor-safely`, `review-changes`). Runs via `uvx code-review-graph serve`; register it at user scope in `~/.claude.json` so it's available in every repo. Without it those four skills have nothing to drive; the rest of the kit is unaffected.
