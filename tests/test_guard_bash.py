@@ -286,12 +286,28 @@ class EmptyVariableBeforeTheCommand(Base):
         self.assertEqual(self.check("$x pkill node"), "kill-by-name")
         self.assertEqual(self.check("$x dropdb app"), "data-delete")
 
-    def test_a_quoted_or_escaped_word_is_never_empty(self):
-        # bash runs a program named "" (or "$x") and fails, so nothing after it runs
+    def test_a_quoted_at_expansion_is_dropped_too(self):
+        # "$@" and "${arr[@]}" expand to no word at all when there is nothing to expand, quotes or not
+        self.assertEqual(self.check('"$@" rm -rf ~'), "rm-root")
+        self.assertEqual(self.check('"${arr[@]}" rm -rf ~'), "rm-root")
+        self.assertEqual(self.check('"$x$@" rm -rf ~'), "rm-root")
+        self.assertEqual(self.check('npm test && "$@" git reset --hard'), "reset-hard")
+        self.assertEqual(self.check('"$@" rm -rf ~; echo "unclosed'), "rm-root")  # the rough split
+
+    def test_an_escaped_dollar_in_a_double_quoted_inner_script(self):
+        # bash drops the backslash inside double quotes, so the inner shell gets `$x git reset --hard`
+        self.assertEqual(self.check('bash -c "\\$x git reset --hard"'), "reset-hard")
+        self.assertIsNone(self.check('bash -c "\\$x git status"'))
+
+    def test_a_quoted_or_escaped_word_stays_the_program(self):
+        # bash keeps it as one word, even an empty one, and fails to run a program named "" (or $x),
+        # so nothing after it runs; an @ expansion is the exception (the test above)
         self.assertIsNone(self.check('"$x" rm -rf ~'))
         self.assertIsNone(self.check("'$x' rm -rf ~"))
         self.assertIsNone(self.check("\\$x rm -rf ~"))
         self.assertIsNone(self.check('$x"" rm -rf ~'))
+        self.assertIsNone(self.check("'$@' rm -rf ~"))
+        self.assertIsNone(self.check('"$*" rm -rf ~'))
         self.assertIsNone(self.check("bash -c '\"$x\" git reset --hard'"))
         self.assertIsNone(self.check('"$x" rm -rf ~; echo "unclosed'))
 
@@ -300,7 +316,6 @@ class EmptyVariableBeforeTheCommand(Base):
         self.assertIsNone(self.check("$x git status"))
         self.assertIsNone(self.check("$EDITOR notes.md"))
         self.assertIsNone(self.check("$x rm -rf ./build"))
-        self.assertEqual(self.check("rm -rf $HOME"), "rm-root")
 
 
 if __name__ == "__main__":
