@@ -29,11 +29,11 @@ or obfuscated command can get past them. Their job is the honest mistake at 2 a.
 
 It also reads inside `bash -c "..."` (and flag clusters such as `bash -lc`), `sh -c`,
 `powershell -Command "..."` and common wrappers (`sudo -u <user>`, `env`, `time`, `timeout 30`,
-`nohup`, `xargs`), so wrapping a command does not hide it. Nor does an empty variable in front
-of it: a program word made only of unquoted variable expansions (`$x`, `${x}`, `$1`, `$@`) can
-expand to nothing, and bash then runs the words after it, so the line is read both with and
-without that word (`$x rm -rf ~` is refused like `rm -rf ~`; a quoted `"$@"` is read the same
-way, since it can also expand to no word). Redirections such as `2>&1` or `> push.log` are
+`nohup`, `xargs`), so wrapping a command does not hide it. Nor does an empty variable of the
+usual forms in front of it: a program word made only of unquoted `$x`, `${x}`, `$1` to `$9`,
+`$@` or `$*` expansions can expand to nothing, and bash then runs the words after it, so the
+line is read both with and without that word (`$x rm -rf ~` is refused like `rm -rf ~`; a quoted
+`"$@"` is read the same way, since it can also expand to no word). Redirections such as `2>&1` or `> push.log` are
 dropped before a command is read, and a line it cannot tokenize is still split and checked
 rather than allowed.
 
