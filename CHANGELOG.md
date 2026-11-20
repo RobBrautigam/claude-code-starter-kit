@@ -8,7 +8,7 @@ All notable changes to this kit. The format follows [Keep a Changelog](https://k
 
 - `hooks/guard_bash.py`: an empty quoted argument (`""` or `''`) no longer splits a command in two before the checks read it, so `rm -rf "" ~`, `psql "" -c "DROP TABLE users"` and `git commit -m "" -n` are refused like the same commands without it.
 - `hooks/guard_bash.py`: an empty variable (`$x`, `${x}`, `$1` to `$9`, `$@`, `$*`) before a command no longer hides it. A program word made only of those unquoted expansions, or a quoted `"$@"`, can expand to no word at all, and bash then runs the words after it, so the line is now read both with and without that word: `$x rm -rf ~` is refused like `rm -rf ~`.
-- `hooks/guard_bash.py`: `$!` (empty before the first background job) and `${!x}` (empty when the variable that `x` names is unset) before a command no longer hide it either: `$! rm -rf ~` is refused like `rm -rf ~`, while a quoted `"$!"` or `"${!x}"` keeps its verdict. A `!` inside a word now stays part of that word, as bash reads it outside an interactive shell (`git reset --hard!` hands git `--hard!`, not `--hard`).
+- `hooks/guard_bash.py`: `$!` (empty before the first background job) and `${!x}` (empty when the variable that `x` names is unset) before a command no longer hide it either: `$! rm -rf ~` is refused like `rm -rf ~`, while a quoted `"$!"` or `"${!x}"` keeps its verdict. A `!` inside a word now stays part of that word, as bash reads it outside an interactive shell (`git reset --hard!` hands git `--hard!`, not `--hard`); a `!` right before a `(`, which starts an extglob pattern, is still read apart, so `rm -rf ~/!(keep)` stays refused.
 
 ## [1.2.0] - 2026-11-04
 
