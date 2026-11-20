@@ -190,8 +190,9 @@ def tokenize(command: str) -> List[str]:
         lexer = shlex.shlex(source, posix=True, punctuation_chars=True)
         source.lexer = lexer
         lexer.whitespace = " \t"
-        # ! too: a shell that is not interactive reads it as a plain character, so `$!`, `${!x}`
-        # and `a!b` each stay one word, as bash reads them
+        # ! too: inside a word, a shell that is not interactive reads it as a plain character, so
+        # `$!`, `${!x}` and `a!b` each stay one word, as bash reads them (a lone ! stays a word of
+        # its own, and a ! before a ( is read apart below)
         lexer.wordchars += "~-./*$:\\=@%+,{}[]!"
         tokens: List[str] = []
         while True:
@@ -199,6 +200,10 @@ def tokenize(command: str) -> List[str]:
             token = lexer.get_token()
             if token == lexer.eof:
                 return tokens
+            if token.startswith("(") and len(tokens) > 0 and tokens[-1].endswith("!") and tokens[-1] != "!":
+                # !( starts an extglob pattern: with extglob on, `rm -rf ~/!(keep)` names every
+                # entry of ~/ but keep, so the word before the ! is read as the target
+                tokens[-1:] = [tokens[-1][:-1], "!"]
             tokens.append(MaybeEmpty(token) if may_vanish(token, source.states) else token)
     except ValueError:
         rough: List[str] = []

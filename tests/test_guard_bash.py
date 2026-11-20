@@ -378,6 +378,18 @@ class BangExpansionsBeforeTheCommand(Base):
         self.assertEqual(self.check("git commit -m fix! --no-verify"), "no-verify")
         self.assertEqual(self.check("rm -rf ~ !"), "rm-root")
 
+    def test_an_extglob_bang_pattern_is_still_read_apart(self):
+        # with extglob on, `~/!(keep)` is every entry of the home folder but keep: the ! before a (
+        # is read apart, so the folder in front of it is the target
+        for command in ("rm -rf ~/!(keep)", "rm -rf ~/!(keep|other)", "rm -rf /!(boot)", "rm -rf $HOME/!(keep)",
+                        "rm -rf ${HOME}/!(keep)", "shopt -s extglob\nrm -rf ~/!(keep)",
+                        "bash -O extglob -c 'rm -rf ~/!(keep)'", "sudo rm -rf /!(proc|sys)"):
+            self.assertEqual(self.check(command), "rm-root", command)
+        self.assertIsNone(self.check("rm -rf ./build/!(keep)"))
+        # the word that ends in the ! is split there, and a lone ! is left as it is
+        self.assertEqual(guard_bash.tokenize("rm -rf ~/!(keep)"), ["rm", "-rf", "~/", "!", "(", "keep", ")"])
+        self.assertEqual(guard_bash.tokenize("!(git status)"), ["!", "(", "git", "status", ")"])
+
 
 if __name__ == "__main__":
     unittest.main()
