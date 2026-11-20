@@ -63,7 +63,9 @@ Four things make this work as a system rather than a pile of files:
 claude-code-starter-kit
 ├── requires:  Claude Code (or any agentic CLI honoring markdown skills/rules)
 ├── requires:  Superpowers (Obra)            ← the workflow engine the skills call
-├── requires:  Python 3.9+                   ← the installer, the hooks, the tests (stdlib only)
+├── requires:  Python 3.9+                   ← the installer, the tests, the two Python hooks and the
+│                                              `research` paid script (stdlib only); the README's
+│                                              agent install prompt copies the files without it
 ├── requires:  Git                           ← the clone, the git hooks, the setup doctor
 ├── optional:  Perplexity API key            ← the `research` skill's paid fallback
 ├── optional:  GitHub CLI (gh)               ← `ship`, `project-manager` PR ops

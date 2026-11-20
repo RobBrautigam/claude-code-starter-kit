@@ -140,9 +140,9 @@ Install: https://github.com/obra/superpowers
 
 Until Superpowers is installed, the `project-manager` skill (and the others that name a Superpowers skill) will reference skills that don't exist yet - the workflow degrades gracefully (Claude will narrate the steps instead of invoking the skill) but the full value comes from having Superpowers installed.
 
-### Python 3.9 or newer
+### Python 3.9 or newer (not needed for the agent install)
 
-For `scripts/install.py`, the hooks and the tests. Standard library only.
+`scripts/install.py`, the tests and two of the hooks run on Python 3.9 or newer, standard library only: the command guard (`hooks/guard_bash.py`) and the pre-push guard (`hooks/git/public_repo_guard.py`, which git runs through a small `sh` wrapper). The agent install prompt above needs no Python: it copies the files with the shell's own copy commands. The `commit-msg` hook is POSIX `sh` and needs no Python either. The one other Python file is the `research` skill's optional paid script (`skills/research/scripts/perplexity_research.py`, standard library only).
 
 ### Perplexity API key (optional, for the research skill's paid fallback)
 
