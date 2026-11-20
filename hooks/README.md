@@ -154,7 +154,7 @@ any of it matches.
 
    ```bash
    KIT="$HOME/claude-code-starter-kit"
-   printf '#!/bin/sh\nexec python "%s" "$@"\n' "$KIT/hooks/git/public_repo_guard.py" > .git/hooks/pre-push
+   printf '#!/bin/sh\nexec "%s" "%s" "$@"\n' "$(python -c 'import sys; print(sys.executable)')" "$KIT/hooks/git/public_repo_guard.py" > .git/hooks/pre-push
    chmod +x .git/hooks/pre-push
    ```
 

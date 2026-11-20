@@ -3,12 +3,14 @@
 accidents before the Bash (or PowerShell) tool runs them.
 
     Register it in ~/.claude/settings.json (see hooks/README.md):
-        PreToolUse, matcher "Bash|PowerShell", command: python <path>/guard_bash.py
+        PreToolUse, matcher "Bash|PowerShell", command: "<python>" "<path>/guard_bash.py"
+        <python> is a Python's full path (scripts/install.py --with-hooks prints this command with
+        the Python that ran it): a bare `python` may not be on the PATH the hook runs under
 
 What it refuses (each refusal names the check, the reason and the fix):
 
-    no-verify        git commit / push / merge / rebase / cherry-pick / am with --no-verify
-                     (or `git commit -n`): a failed hook is fixed, never skipped
+    no-verify        git commit / push / merge / rebase / cherry-pick / am / revert with
+                     --no-verify (or `git commit -n`): a failed hook is fixed, never skipped
     force-push-main  git push --force / -f / --force-with-lease / a +refspec, aimed at main or
                      master (named, implied by the current branch, or --all / --mirror)
     reset-hard       git reset --hard: it throws away uncommitted work, possibly another
