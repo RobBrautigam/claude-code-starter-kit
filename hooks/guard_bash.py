@@ -60,9 +60,10 @@ WRAPPERS = {"sudo", "env", "time", "nice", "nohup", "command", "builtin", "exec"
 SHELLS_WITH_C = {"bash", "sh", "zsh", "dash"}
 POWERSHELLS = {"powershell", "powershell.exe", "pwsh", "pwsh.exe"}
 SEPARATOR_CHARS = frozenset(";&|()\n")  # what a separator token is made of (is_separator)
-# A word made only of parameter expansions ($name, ${...}, $1 to $9, $@, $*): each can expand to
+# A word made only of parameter expansions ($name, ${...}, $1 to $9, $@, $*, $!): each can expand to
 # nothing, and bash drops an unquoted word that does (`$x rm -rf ~` runs `rm -rf ~` when x is empty).
-EXPANSION_RE = re.compile(r"^(?:\$(?:[A-Za-z_][A-Za-z0-9_]*|[1-9@*]|\{[^{}]+\}))+$")
+# $! is empty before the first background job, and ${!x} when the variable x names is unset.
+EXPANSION_RE = re.compile(r"^(?:\$(?:[A-Za-z_][A-Za-z0-9_]*|[1-9@*!]|\{[^{}]+\}))+$")
 # An @ expansion ("$@", "${arr[@]}") expands to no word at all when there is nothing to expand,
 # even inside double quotes; every other quoted word stays, empty or not.
 AT_EXPANSION_RE = re.compile(r"\$(?:@|\{[^{}]*@[^{}]*\})")
@@ -187,7 +188,9 @@ def tokenize(command: str) -> List[str]:
         lexer = shlex.shlex(source, posix=True, punctuation_chars=True)
         source.lexer = lexer
         lexer.whitespace = " \t"
-        lexer.wordchars += "~-./*$:\\=@%+,{}[]"
+        # ! too: a shell that is not interactive reads it as a plain character, so `$!`, `${!x}`
+        # and `a!b` each stay one word, as bash reads them
+        lexer.wordchars += "~-./*$:\\=@%+,{}[]!"
         tokens: List[str] = []
         while True:
             source.states = set()

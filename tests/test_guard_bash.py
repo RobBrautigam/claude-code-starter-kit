@@ -368,6 +368,16 @@ class BangExpansionsBeforeTheCommand(Base):
         self.assertIsNone(self.check("kill $!"))
         self.assertIsNone(self.check('echo "${!x}"'))
 
+    def test_a_bang_inside_a_word_keeps_it_one_word(self):
+        # a shell that is not interactive hands the program `--hard!`, `main!` or `../o!ther` as one
+        # word, so the guard reads that word, never the parts on either side of the !
+        self.assertIsNone(self.check("git reset --hard!"))
+        self.assertIsNone(self.check("git push --force origin main!"))
+        self.assertEqual(self.check("git -C ../o!ther reset --hard"), "reset-hard")
+        self.assertEqual(self.check("rm -!rf ~"), "rm-root")
+        self.assertEqual(self.check("git commit -m fix! --no-verify"), "no-verify")
+        self.assertEqual(self.check("rm -rf ~ !"), "rm-root")
+
 
 if __name__ == "__main__":
     unittest.main()
